@@ -175,12 +175,10 @@ end
 
 	Initailizes the sandbox environment for the calling script.
 
-	The following globals are **removed/set to `nil`**:
+	The following globals are **removed**:
 	- `_G` / `shared`
 	- `SharedTable`
 	- `debug` library
-
-	The following globals are set to a function that throws an error when called:
 	- `getfenv`
 	- `setfenv`
 	- `loadstring`
