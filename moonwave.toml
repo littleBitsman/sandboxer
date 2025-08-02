@@ -1,11 +1,17 @@
+title = "Sandboxer"
+
 gitSourceBranch = "main"
 changelog = true
-classOrder = []
+classOrder = [
+    "Sandboxer",
+    "InstanceSandboxer",
+    "InstanceList",
+]
 
 [docusaurus]
+url = "https://littlebitsman.dev"
 onBrokenLinks = "throw"
 onBrokenMarkdownLinks = "warn"
-favicon = ""
 
 [footer]
 style = "dark"

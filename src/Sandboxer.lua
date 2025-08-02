@@ -1,4 +1,5 @@
 --!strict
+--!optimize 2
 --[[
 Sandboxer - a Roblox script sandboxer.
 Copyright (C) 2025 littleBitsman
@@ -20,11 +21,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --[=[
 	@class Sandboxer
 	
-	The main Sandboxer class.
+	The main Sandboxer class. This class is intended to be used as follows,
+	where the module is placed in ServerScriptService named `Init`:
+	```lua
+	require(game:GetService("ServerScriptService").Init):Init()
+	```
+	This would be expected to be the first line of all scripts that are to be sandboxed
+	(not including `--!strict`, `--!optimize`, and other directives).
+
+	Having this be the first line guarantees that the script is sandboxed before any other code runs.
+	You would have to check if it is the first line of code yourself, using external sources with
+	modules such as [rbx-reader](https://npmjs.org/package/rbx-reader).
+	
+	More customizability is planned for the future, such as:
+	- Customizing the environment
+	- Customizing allowed Instances
+	- Customizing allowed RBXScriptSignals
+	- Customizing allowed methods
+	- Sandboxing functions
 ]=]
 local Sandboxer = {}
+
 local __METATABLE = "No."
 local InstanceSandboxer = require("@self/InstanceSandboxer")
+local InstanceMod = require("@self/Instance")
 
 -- Thank you roblox, very cool! (deprecation warnings - WHO CARES)
 local getfenv, setfenv = getfenv, setfenv
@@ -40,16 +60,16 @@ local GAME_SANDBOXED = InstanceSandboxer.wrapInstance(game)
 local WORKSPACE_SANDBOXED = InstanceSandboxer.wrapInstance(workspace)
 
 local function fprint(...: any)
-	print("[FEUCM SECURITY]", ...)
+	print("[SANDBOX SECURITY]", ...)
 end
 local function fwarn(...: any)
-	warn("[FEUCM SECURITY]", ...)
+	warn("[SANDBOX SECURITY]", ...)
 end
 local function ferror(msg: string, level: number?)
-	error("[FEUCM SECURITY]" .. msg, level or 0)
+	error("[SANDBOX SECURITY]" .. msg, level or 0)
 end
 local function fassert(expr: any, msg: string?)
-	assert(expr, "[FEUCM SECURITY]" .. (msg or "assertion failed!"))
+	assert(expr, "[SANDBOX SECURITY]" .. (msg or "assertion failed!"))
 end
 
 function xpcallIsBad(...: any)
@@ -57,10 +77,6 @@ function xpcallIsBad(...: any)
 end
 
 local STRING_RESOLVER_PATTERN = "([%a.@]+)/?"
---[=[
-	@within Sandboxer
-	@private
-]=]
 function ResolveStringPath(mod: Instance, str: string): Instance?
 	local i = 0
 	local currentInstance: Instance?
@@ -149,7 +165,7 @@ function hahano()
 	error("No.", 0)
 end
 
--- Side note - type() will report wrapped Instances/RBXScriptSignals 
+-- Side note - type() will report Instances/RBXScriptSignals 
 -- as userdata anyways so we don't have to wrap that. 
 local _typeof = require("@self/typeof")
 
@@ -186,6 +202,34 @@ function _rawequal(...): boolean
 	end
 end
 
+--[=[
+	@within Sandboxer
+
+	Initailizes the sandbox environment for the calling script.
+
+	The following globals are **removed/set to `nil`**:
+	- `_G` / `shared`
+	- `SharedTable`
+	- `debug` library
+
+	The following globals are set to a function that throws an error when called:
+	- `getfenv`
+	- `setfenv`
+	- `loadstring`
+	- `newproxy`
+	- `xpcall` (*note: use `pcall` instead*)
+
+	The following globals are set to sandboxed versions of the originals:
+	- `game` / `Game`
+	- `workspace` / `Workspace`
+	- `script`
+	- `require`
+	- `typeof`
+	- `rawget`
+	- `rawset`
+	- `rawequal`
+	- `Instance`
+]=]
 function Sandboxer:Init()	
 	local CallingFenv, LEVEL = GetHighestEnv()
 	if CallingFenv.getfenv == hahano then return end
@@ -291,7 +335,7 @@ function Sandboxer:Init()
 		Faces = Faces,
 		FloatCurveKey = FloatCurveKey,
 		Font = Font,
-		Instance = InstanceSandboxer.Instance,
+		Instance = InstanceMod,
 		NumberRange = NumberRange,
 		NumberSequence = NumberSequence,
 		NumberSequenceKeypoint = NumberSequenceKeypoint,
@@ -320,6 +364,8 @@ function Sandboxer:Init()
 	-- The end yay
 	setfenv(LEVEL, fenv)
 end
+
+Sandboxer.typeof = _typeof
 
 return setmetatable(Sandboxer, {
 	__index = hahano,
