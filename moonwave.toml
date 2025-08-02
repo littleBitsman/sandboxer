@@ -10,7 +10,7 @@ classOrder = [
 
 [docusaurus]
 url = "https://littlebitsman.dev"
-baseUrl = "/Sandboxer"
+baseUrl = "/sandboxer"
 onBrokenLinks = "throw"
 onBrokenMarkdownLinks = "warn"
 
