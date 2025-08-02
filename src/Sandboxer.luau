@@ -52,24 +52,28 @@ local version, elapsedTime do
 	-- little hack to make these not be annoying
 	local fenv = getfenv(0)
 
-	version = {fenv.Version, fenv.Version}
+	version = {fenv.version, fenv.Version}
 	elapsedTime = {fenv.elapsedTime, fenv.ElapsedTime}
 end
 
 local GAME_SANDBOXED = InstanceSandboxer.wrapInstance(game)
 local WORKSPACE_SANDBOXED = InstanceSandboxer.wrapInstance(workspace)
 
-function fprint(...: any)
+function _fprint(...: any)
 	print("[SANDBOX SECURITY]", ...)
 end
 function fwarn(...: any)
 	warn("[SANDBOX SECURITY]", ...)
 end
-function ferror(msg: string, level: number?)
+function _ferror(msg: string, level: number?)
 	error("[SANDBOX SECURITY]" .. msg, level or 0)
 end
-function fassert(expr: any, msg: string?)
+function _fassert(expr: any, msg: string?)
 	assert(expr, "[SANDBOX SECURITY]" .. (msg or "assertion failed!"))
+end
+
+function nope(): never
+	error("nuh uh", 0)
 end
 
 function xpcallIsBad(...: any)
@@ -107,7 +111,7 @@ function ResolveStringPath(mod: Instance, str: string): Instance?
 	return currentInstance
 end
 
-local _require = require
+local realrequire = require
 function SafeRequire(module: (Instance | string | number)?, caller: Instance): any
 	if typeof(module) == "string" then
 		local new = ResolveStringPath(caller, module)
@@ -120,7 +124,7 @@ function SafeRequire(module: (Instance | string | number)?, caller: Instance): a
 		-- Steal it from roblox hehe
 		error("Attempted to call require with invalid argument(s).", 0)
 	end
-	return _require(module)
+	return realrequire(module)
 end
 
 -- Returns highest available environment, and its level relative to this function's caller.
@@ -136,7 +140,8 @@ function GetHighestEnv(): ({ [string]: any }, number)
 	return getfenv(i - 2), i - 3
 end
 
-function hahano()
+-- I honestly have no idea why i wrote this lol
+function _hahano()
 	local Env, Level = GetHighestEnv()
 	local CallingScriptWrapped: any = Env.script
 	local CallingScript: BaseScript
@@ -147,7 +152,7 @@ function hahano()
 		CallingScript = CallingScriptWrapped :: any
 	else
 		fwarn("SANDBOX BREACH DETECTED FROM UNKNOWN SCRIPT !!")
-		error("No.", 0)
+		nope()
 	end
 
 	-- Log info for auditing
@@ -162,44 +167,7 @@ function hahano()
 		CallingScript:Destroy()
 	end)
 	
-	error("No.", 0)
-end
-
--- Side note - type() will report Instances/RBXScriptSignals 
--- as userdata anyways so we don't have to wrap that. 
-local _typeof = require("@self/typeof")
-
-function _rawget<K, V>(...): V?
-	local t: { [K]: V }, k: K = InstanceSandboxer.requireArguments(2, ...)
-	if InstanceSandboxer.isWrapped(t) then
-		error("invalid argument #1 to 'rawget' (table expected, got Instance)", 0)
-	elseif InstanceSandboxer.isWrappedSignal(t) then
-		error("invalid argument #1 to 'rawget' (table expected, got RBXScriptSignal)", 0)
-	else
-		return rawget(t, k)
-	end
-end
-
-function _rawset<K, V>(...)
-	local t: { [K]: V }, k: K, v: V = InstanceSandboxer.requireArguments(3, ...)
-	if InstanceSandboxer.isWrapped(t) then
-		error("invalid argument #1 to 'rawset' (table expected, got Instance)", 0)
-	elseif InstanceSandboxer.isWrappedSignal(t) then
-		error("invalid argument #1 to 'rawset' (table expected, got RBXScriptSignal)", 0)
-	else
-		rawset(t, k, v)
-	end
-end
-
-function _rawequal(...): boolean
-	local a, b = InstanceSandboxer.requireArguments(2, ...)
-	if InstanceSandboxer.isWrapped(a) or InstanceSandboxer.isWrapped(b) 
-		or InstanceSandboxer.isWrappedSignal(a) or InstanceSandboxer.isWrappedSignal(b)
-	then
-		return a == b 
-	else
-		return rawequal(a, b)
-	end
+	nope()
 end
 
 --[=[
@@ -219,29 +187,20 @@ end
 	- `newproxy`
 	- `xpcall` (*note: use `pcall` instead*)
 
-	The following globals are set to sandboxed versions of the originals:
-	- `game` / `Game`
-	- `workspace` / `Workspace`
-	- `script`
-	- `require`
-	- `typeof`
-	- `rawget`
-	- `rawset`
-	- `rawequal`
-	- `Instance`
+	All other globals are set to sandboxed versions of the originals.
 ]=]
 function Sandboxer:Init()	
 	local CallingFenv, LEVEL = GetHighestEnv()
-	if CallingFenv.getfenv == hahano then return end
+	if CallingFenv.game == GAME_SANDBOXED then return end
 	local CallingScript = CallingFenv.script :: BaseScript
 	local WrappedScript = InstanceSandboxer.wrapInstance(CallingScript)
 	
-	local function LocalRequire(a: any)
+	local function _require(a: any)
 		return SafeRequire(a, CallingScript)
 	end
 	
 	-- Big boi
-	local fenv = {
+	local fenv = InstanceSandboxer.deepWrap({
 		-- Straightup gone
 		_G = nil,
 		shared = nil,
@@ -252,12 +211,6 @@ function Sandboxer:Init()
 		workspace = WORKSPACE_SANDBOXED,
 		Workspace = WORKSPACE_SANDBOXED,
 		script = WrappedScript,
-		
-		-- Dangerous stuff
-		getfenv = hahano,
-		setfenv = hahano,
-		loadstring = hahano,
-		newproxy = hahano,
 		
 		-- Not-so-dangerous-but-still-dangerous stuff
 		xpcall = xpcallIsBad,
@@ -273,21 +226,18 @@ function Sandboxer:Init()
 		next = next,
 		pairs = pairs,
 		pcall = pcall,
+		rawget = rawget,
+		rawset = rawset,
+		rawequal = rawequal,
+		rawlen = rawlen,
+		require = require,
 		select = select,
 		setmetatable = setmetatable,
 		tonumber = tonumber,
 		tostring = tostring,
 		type = type,
+		typeof = typeof,
 		unpack = unpack,
-		-- (Changed)
-		require = LocalRequire,
-		typeof = _typeof,
-		
-		-- Raw table methods
-		rawget = _rawget,
-		rawset = _rawset,
-		rawequal = _rawequal,
-		rawlen = rawlen, -- This doesn't leak anything if it's a wrapped value so its OK!
 		
 		-- I'm not sure if this is even used but sure ok
 		_VERSION = _VERSION,
@@ -359,16 +309,16 @@ function Sandboxer:Init()
 		Vector2int16 = Vector2int16,
 		Vector3 = Vector3,
 		Vector3int16 = Vector3int16
-	}
+	})
 	
 	-- The end yay
 	setfenv(LEVEL, fenv)
 end
 
-Sandboxer.typeof = _typeof
+Sandboxer.typeof = InstanceSandboxer.typeof
 
 return setmetatable(Sandboxer, {
-	__index = hahano,
-	__newindex = hahano,
+	__index = nope,
+	__newindex = nope,
 	__metatable = __METATABLE
 })

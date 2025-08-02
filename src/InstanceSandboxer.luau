@@ -26,135 +26,82 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 local InstanceSandboxer = {}
 
 local InstanceList = require("./InstanceList")
-local Metatables = require("./Metatables")
-local othertypeof = require("./typeof")
 local WRAPPED, UNWRAP = InstanceList.WRAPPED, InstanceList.UNWRAP
 local WRAPPED_SIGNAL, UNWRAP_SIGNAL = InstanceList.WRAPPED_SIGNALS, InstanceList.UNWRAP_SIGNALS
 InstanceSandboxer.unwrap = InstanceList.unwrap
 InstanceSandboxer.isWrapped = InstanceList.isWrapped
 InstanceSandboxer.isWrappedSignal = InstanceList.isWrappedSignal
-
 InstanceSandboxer.instanceAllowed = InstanceList.instanceAllowed
 
-type AnyFn = (...any) -> (...any)
-local METHOD_CACHE: { [AnyFn]: AnyFn } = {}
+-- Thank you Luau, very cool!
+InstanceSandboxer.wrapArgs = nil :: any
+InstanceSandboxer.unwrapArgs = nil :: any
+
+local MATH = {"add", "sub", "mul", "div", "idiv", "mod", "unm", "pow"}
+local LOCKED = "The metatable is locked"
+
+--[=[
+	@within InstanceSandboxer
+	@type AnyFn (...any) -> (...any)
+
+	Function type that all functions can be reduced to.
+]=]
+export type AnyFn = (...any) -> (...any)
+local METHOD_CACHE: { [AnyFn]: AnyFn } = setmetatable({}, { __mode = "k" }) :: any
+
+--[=[
+	@within InstanceSandboxer
+	@private
+
+	Requires a specific number of arguments to be passed to the function.
+	If not enough arguments are passed, it will throw an error.
+	
+	@param count number -- The number of arguments required.
+	@param ... any
+	@return ...any -- The variadic arguments passed to the function.
+]=]
+function InstanceSandboxer.requireArguments(count: number, fn: string, types: {string}, ...): ...any
+	local n = select("#", ...)
+	if n < count then
+		error(`missing argument #{n + 1}` 
+			.. (types and types[n + 1]) and ` to '{fn}' ({types[n + 1]} expected)` or "", 
+			0
+		)
+	end
+	return ...
+end
 
 --[=[
 	@within InstanceSandboxer
 
-	Deeply wraps `v` if it is a table, wrapping `Instance`s and `RBXScriptSignal`s as needed.
-	If `v` is an `Instance` or `RBXScriptSignal`, it will be wrapped and returned.
+	Wraps a function in a proxy that allows it to be safely used in the sandbox.
+	The wrapped function will return wrapped arguments when called.
 
-	@param v any -- The value to deeply wrap.
-	@param instance Instance? -- The `Instance` if wrapping one of its properties, methods, or events.
-	@param key string? -- The key of the property, method, or event being wrapped, if applicable.
+	@param fn AnyFn -- The function to wrap.
+	@return AnyFn -- The wrapped function.
 ]=]
-function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, pvisited: { [any]: any }?): any
-	local visited: { [any]: any } = pvisited or {}
-
-	if visited[v] ~= nil then
-		return visited[v]
+function InstanceSandboxer.wrapFn(fn: AnyFn): AnyFn
+	if METHOD_CACHE[fn] then
+		return METHOD_CACHE[fn]
 	end
-
-	local ty = typeof(v)
-	if ty == "Instance" then
-		local wrapped = InstanceSandboxer.wrapInstance(v)
-		visited[v] = wrapped
-		return wrapped
-	elseif ty == "RBXScriptSignal" then
-		local wrapped = InstanceSandboxer.wrapEvent(v, key or "")
-		visited[v] = wrapped
-		return wrapped
-	elseif ty == "table" then
-		local new = {}
-		visited[v] = new
-		for k, val in v do
-			local wrappedKey = InstanceSandboxer.deepWrap(k, nil, k, visited)
-			local wrappedVal = InstanceSandboxer.deepWrap(val, nil, k, visited)
-			new[wrappedKey] = wrappedVal
+	local parameters: number, isVariadic: boolean = debug.info(fn, "a")
+	if parameters == 0 and not isVariadic then
+		local function wrapped()
+			return unpack(InstanceSandboxer.wrapArgs(fn()))
 		end
-		return new
-	elseif ty == "function" then
-		local cached = METHOD_CACHE[v]
-		if cached then
-			return cached
-		else
-			cached = function(...)
-				return InstanceSandboxer.wrapArgs(v(unpack(InstanceSandboxer.unwrapArgs(...))))
-			end
-			METHOD_CACHE[v] = cached
-			return cached
-		end
+		METHOD_CACHE[fn] = wrapped
 	else
-		return v
-	end
-end
-
---[=[
-	@within InstanceSandboxer
-
-	Deeply unwraps `v` if it is a table, unwrapping `Instance`s and `RBXScriptSignal`s as needed.
-	If `v` is a wrapped `Instance` or `RBXScriptSignal`, it will be unwrapped and returned.
-
-	@param v any -- The value to deeply unwrap.
-]=]
-function InstanceSandboxer.deepUnwrap(v: any, pvisited: { [any]: any }?): any
-	local visited: { [any]: any } = pvisited or {}
-
-	if visited[v] ~= nil then
-		return visited[v]
-	end
-
-	local raw = InstanceSandboxer.unwrap(v)
-	if raw then
-		visited[v] = raw
-		return raw
-	end
-
-	local ty = typeof(v)
-	if ty == "table" then
-		local new = {}
-		visited[v] = new
-		for k, val in v do
-			local unwrappedKey = InstanceSandboxer.deepUnwrap(k, visited)
-			local unwrappedVal = InstanceSandboxer.deepUnwrap(val, visited)
-			new[unwrappedKey] = unwrappedVal
+		local function wrapped(...)
+			return unpack(InstanceSandboxer.wrapArgs(fn(unpack(InstanceSandboxer.unwrapArgs(...)))))
 		end
-		return new
-	else
-		return v
+		METHOD_CACHE[fn] = wrapped
 	end
+	
+	return METHOD_CACHE[fn]
 end
-
---[=[
-	@within InstanceSandboxer
-
-	Deeply wraps all arguments passed to the function, making
-	them ready to be returned to the sandboxed environment.
-]=]
-function InstanceSandboxer.wrapArgs(...: any): { any }
-	local args = {...}
-	local visited = {}
-	for i = 1, #args do
-		args[i] = InstanceSandboxer.deepWrap(args[i], nil, nil, visited)
-	end
-	return unpack(args)
-end
-
---[=[
-	@within InstanceSandboxer
-
-	Deeply unwraps all arguments passed to the function (usually
-	from inside the sandbox), making them ready to be used in a
-	method call on an `Instance`.
-]=]
-function InstanceSandboxer.unwrapArgs(...: any): { any }
-	local args = {...}
-	local visited = {}
-	for i = 1, #args do
-		args[i] = InstanceSandboxer.deepUnwrap(args[i], visited)
-	end
-	return args
+InstanceSandboxer.typeof = InstanceSandboxer.wrapFn(typeof)
+local NEWINDEX_FAIL = function(self, k: string, _: any)
+	error(`{k} is not a valid member of {InstanceSandboxer.typeof(self)}`)
 end
 
 function InstanceSandboxer.requireType(item: any, ty: string, err: string?)
@@ -162,83 +109,39 @@ function InstanceSandboxer.requireType(item: any, ty: string, err: string?)
 		error(err or `Expected {ty}, got {typeof(item)}`, 0)
 	end
 end
-local SIGNAL_WRAPPER = {
-	Connect = function(...)
-		local self: any, cb: (...any) -> () = InstanceSandboxer.requireArguments(2, ...)
-		local signal = InstanceSandboxer.unwrap(self) :: RBXScriptSignal
-		InstanceSandboxer.requireType(signal, "RBXScriptSignal", `invalid argument #1 to 'Connect' (RBXScriptSignal expected, got {othertypeof(self)}`)
-		InstanceSandboxer.requireType(cb, "function", "Attempt to connect failed: Passed value is not a function")
-		return signal:Connect(function(...)
-			cb(InstanceSandboxer.wrapArgs(...))
-		end)
-	end,
-	Once = function(...)
-		local self: any, cb: (...any) -> () = InstanceSandboxer.requireArguments(2, ...)
-		local signal = InstanceSandboxer.unwrap(self) :: RBXScriptSignal
-		InstanceSandboxer.requireType(signal, "RBXScriptSignal", `invalid argument #1 to 'Once' (RBXScriptSignal expected, got {othertypeof(self)}`)
-		InstanceSandboxer.requireType(cb, "function", "Attempt to connect failed: Passed value is not a function")
-		return signal:Once(function(...)
-			cb(InstanceSandboxer.wrapArgs(...))
-		end)
-	end,
-	Wait = function(...)
-		local self: any = InstanceSandboxer.requireArguments(1, ...)
-		local signal = InstanceSandboxer.unwrap(self) :: RBXScriptSignal
-		InstanceSandboxer.requireType(signal, "RBXScriptSignal", `invalid argument #1 to 'Wait' (RBXScriptSignal expected, got {othertypeof(self)}`)
-		return InstanceSandboxer.wrapArgs(signal:Wait())
-	end,
-	ConnectParallel = function(...)
-		local self: any, cb: (...any) -> () = InstanceSandboxer.requireArguments(2, ...)
-		local signal = InstanceSandboxer.unwrap(self) :: RBXScriptSignal
-		InstanceSandboxer.requireType(signal, "RBXScriptSignal", `invalid argument #1 to 'ConnectParallel' (RBXScriptSignal expected, got {othertypeof(self)}`)
-		InstanceSandboxer.requireType(cb, "function", "Attempt to connect failed: Passed value is not a function")
-		return signal:ConnectParallel(function(...)
-			cb(InstanceSandboxer.wrapArgs(...))
-		end)
-	end
-}
-local SIGNAL_INDEX_METAMETHOD = function(self: any, k: any)
-	local fn = SIGNAL_WRAPPER[k]
-	if fn then
-		return fn
-	else
-		error(`{k} is not a valid member of RBXScriptSignal`, 0)
-	end
-end
 
---[=[
-	@within InstanceSandboxer
+local DEFAULT_METATABLE: { [string]: any } = {} do
+	DEFAULT_METATABLE.__call = function(self, ...)
+		error(`attempt to call a {InstanceSandboxer.typeof(self)} value`, 0)
+	end
+	DEFAULT_METATABLE.__concat = function(self, v)
+		error(`attempt to concatenate {InstanceSandboxer.typeof(self)} with {InstanceSandboxer.typeof(v)}`, 0)
+	end
 
-	Wraps an `RBXScriptSignal` in a proxy that allows it to be safely used in 
-	the sandbox. The proxy will have the same methods as an `RBXScriptSignal`, 
-	but will return wrapped arguments when the signal is fired.
+	for _, math in MATH do
+		DEFAULT_METATABLE[`__{math}`] = function(self)
+			error(`attempt to perform arithmetic ({math}) on {InstanceSandboxer.typeof(self)}`, 0)
+		end
+	end
 
-	@param signal RBXScriptSignal -- The `RBXScriptSignal` to wrap.
-	@param name string -- The name of the signal, used for debugging purposes and printing out to console.
-	@return any -- The wrapped `RBXScriptSignal`.
-]=]
-function InstanceSandboxer.wrapEvent(signal: RBXScriptSignal, name: string): any
-	if WRAPPED_SIGNAL[signal] then
-		return WRAPPED_SIGNAL[signal]
+	DEFAULT_METATABLE.__le = function(lhs, rhs)
+		local lhsTy = InstanceSandboxer.typeof(lhs)
+		local rhsTy = InstanceSandboxer.typeof(rhs)
+		error(`attempt to compare {lhsTy} < {rhsTy}`, 0)
 	end
-	local proxy = newproxy(true)
-	local metatable = getmetatable(proxy)
-	
-	metatable.__index = SIGNAL_INDEX_METAMETHOD
-	
-	local STRING = `Signal {name}`
-	metatable.__tostring = function()
-		return STRING
+	DEFAULT_METATABLE.__lt = function(lhs, rhs)
+		local lhsTy = InstanceSandboxer.typeof(lhs)
+		local rhsTy = InstanceSandboxer.typeof(rhs)
+		error(`attempt to compare {lhsTy} <= {rhsTy}`, 0)
 	end
-	
-	for k, v in Metatables.RBXScriptSignal do
-		metatable[k] = v
+	DEFAULT_METATABLE.__len = function(self)
+		error(`attempt to get length of a {InstanceSandboxer.typeof(self)} value`, 0)
 	end
-	
-	WRAPPED_SIGNAL[signal] = proxy
-	UNWRAP_SIGNAL[proxy] = signal
-	
-	return proxy
+	DEFAULT_METATABLE.__iter = function(self)
+		error(`attempt to iterate over a {InstanceSandboxer.typeof(self)} value`, 0)
+	end
+
+	DEFAULT_METATABLE.__metatable = LOCKED
 end
 
 --[=[
@@ -322,7 +225,7 @@ function InstanceSandboxer.wrapInstance(instance: Instance): any?
 		
 		As well as __metatable
 	]]
-	for k, v in Metatables.Instance do
+	for k, v in DEFAULT_METATABLE do
 		mt[k] = v
 	end
 
@@ -334,21 +237,192 @@ end
 
 --[=[
 	@within InstanceSandboxer
-	@private
 
-	Requires a specific number of arguments to be passed to the function.
-	If not enough arguments are passed, it will throw an error.
-	
-	@param count number -- The number of arguments required.
-	@param ... any -- The variadic arguments passed to the function.
-	@return ...any -- The variadic arguments passed to the function.
+	Deeply wraps `v` if it is a table, wrapping `Instance`s and `RBXScriptSignal`s as needed.
+	If `v` is an `Instance` or `RBXScriptSignal`, it will be wrapped and returned.
+
+	@param v any -- The value to deeply wrap.
+	@param instance Instance? -- The `Instance` if wrapping one of its properties, methods, or events.
+	@param key string? -- The key of the property, method, or event being wrapped, if applicable.
 ]=]
-function InstanceSandboxer.requireArguments(count: number, ...): ...any
-	local n = select("#", ...)
-	if n < count then
-		error(`missing argument #{n + 1}`, 0)
+function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, pvisited: { [any]: any }?): any
+	local visited: { [any]: any } = pvisited or {}
+
+	if visited[v] ~= nil then
+		return visited[v]
 	end
-	return ...
+
+	local ty = typeof(v)
+	if ty == "Instance" then
+		local wrapped = InstanceSandboxer.wrapInstance(v)
+		visited[v] = wrapped
+		return wrapped
+	elseif ty == "RBXScriptSignal" then
+		local wrapped = InstanceSandboxer.wrapEvent(v, key or "")
+		visited[v] = wrapped
+		return wrapped
+	elseif ty == "table" then
+		local new = {}
+		visited[v] = new
+		for k, val in v do
+			local wrappedKey = InstanceSandboxer.deepWrap(k, nil, k, visited)
+			local wrappedVal = InstanceSandboxer.deepWrap(val, nil, k, visited)
+			new[wrappedKey] = wrappedVal
+		end
+		return new
+	elseif ty == "function" then
+		local newFn = InstanceSandboxer.wrapFn(v)
+		visited[v] = newFn
+		return newFn
+	else
+		return v
+	end
+end
+
+--[=[
+	@within InstanceSandboxer
+
+	Deeply unwraps `v` if it is a table, unwrapping `Instance`s and `RBXScriptSignal`s as needed.
+	If `v` is a wrapped `Instance` or `RBXScriptSignal`, it will be unwrapped and returned.
+
+	@param v any -- The value to deeply unwrap.
+]=]
+function InstanceSandboxer.deepUnwrap(v: any, pvisited: { [any]: any }?): any
+	local visited: { [any]: any } = pvisited or {}
+
+	if visited[v] ~= nil then
+		return visited[v]
+	end
+
+	local raw = InstanceSandboxer.unwrap(v)
+	if raw then
+		visited[v] = raw
+		return raw
+	end
+
+	local ty = typeof(v)
+	if ty == "table" then
+		local new = {}
+		visited[v] = new
+		for k, val in v do
+			local unwrappedKey = InstanceSandboxer.deepUnwrap(k, visited)
+			local unwrappedVal = InstanceSandboxer.deepUnwrap(val, visited)
+			new[unwrappedKey] = unwrappedVal
+		end
+		return new
+	else
+		return v
+	end
+end
+
+local SIGNAL_WRAPPER = {
+	Connect = function(...)
+		local self: any, cb: (...any) -> () = InstanceSandboxer.requireArguments(1, "Connect", {"RBXScriptSignal"}, ...)
+		local signal = InstanceSandboxer.unwrap(self) :: RBXScriptSignal
+		InstanceSandboxer.requireType(signal, "RBXScriptSignal", `invalid argument #1 to 'Connect' (RBXScriptSignal expected, got {InstanceSandboxer.typeof(self)}`)
+		InstanceSandboxer.requireType(cb, "function", "Attempt to connect failed: Passed value is not a function")
+		return signal:Connect(function(...)
+			cb(InstanceSandboxer.wrapArgs(...))
+		end)
+	end,
+	Once = function(...)
+		local self: any, cb: (...any) -> () = InstanceSandboxer.requireArguments(1, "Once", {"RBXScriptSignal"}, ...)
+		local signal = InstanceSandboxer.unwrap(self) :: RBXScriptSignal
+		InstanceSandboxer.requireType(signal, "RBXScriptSignal", `invalid argument #1 to 'Once' (RBXScriptSignal expected, got {InstanceSandboxer.typeof(self)}`)
+		InstanceSandboxer.requireType(cb, "function", "Attempt to connect failed: Passed value is not a function")
+		return signal:Once(function(...)
+			cb(InstanceSandboxer.wrapArgs(...))
+		end)
+	end,
+	Wait = function(...)
+		local self: any = InstanceSandboxer.requireArguments(1, "Wait", {"RBXScriptSignal"}, ...)
+		local signal = InstanceSandboxer.unwrap(self) :: RBXScriptSignal
+		InstanceSandboxer.requireType(signal, "RBXScriptSignal", `invalid argument #1 to 'Wait' (RBXScriptSignal expected, got {InstanceSandboxer.typeof(self)}`)
+		return InstanceSandboxer.wrapArgs(signal:Wait())
+	end,
+	ConnectParallel = function(...)
+		local self: any, cb: (...any) -> () = InstanceSandboxer.requireArguments(1, "ConnectParallel", {"RBXScriptSignal"}, ...)
+		local signal = InstanceSandboxer.unwrap(self) :: RBXScriptSignal
+		InstanceSandboxer.requireType(signal, "RBXScriptSignal", `invalid argument #1 to 'ConnectParallel' (RBXScriptSignal expected, got {InstanceSandboxer.typeof(self)}`)
+		InstanceSandboxer.requireType(cb, "function", "Attempt to connect failed: Passed value is not a function")
+		return signal:ConnectParallel(function(...)
+			cb(InstanceSandboxer.wrapArgs(...))
+		end)
+	end
+}
+local SIGNAL_INDEX_METAMETHOD = function(self: any, k: any)
+	local fn = SIGNAL_WRAPPER[k]
+	if fn then
+		return fn
+	else
+		error(`{k} is not a valid member of RBXScriptSignal`, 0)
+	end
+end
+--[=[
+	@within InstanceSandboxer
+
+	Wraps an `RBXScriptSignal` in a proxy that allows it to be safely used in 
+	the sandbox. The proxy will have the same methods as an `RBXScriptSignal`, 
+	but will return wrapped arguments when the signal is fired.
+
+	@param signal RBXScriptSignal -- The `RBXScriptSignal` to wrap.
+	@param name string -- The name of the signal, used for debugging purposes and printing out to console.
+	@return any -- The wrapped `RBXScriptSignal`.
+]=]
+function InstanceSandboxer.wrapEvent(signal: RBXScriptSignal, name: string): any
+	if WRAPPED_SIGNAL[signal] then
+		return WRAPPED_SIGNAL[signal]
+	end
+	local proxy = newproxy(true)
+	local metatable = getmetatable(proxy)
+
+	metatable.__index = SIGNAL_INDEX_METAMETHOD
+	metatable.__newindex = NEWINDEX_FAIL
+
+	local STRING = `Signal {name}`
+	metatable.__tostring = function()
+		return STRING
+	end
+
+	for k, v in DEFAULT_METATABLE do
+		metatable[k] = v
+	end
+
+	WRAPPED_SIGNAL[signal] = proxy
+	UNWRAP_SIGNAL[proxy] = signal
+
+	return proxy
+end
+
+--[=[
+	@within InstanceSandboxer
+
+	Deeply wraps all arguments passed to the function, making
+	them ready to be returned to the sandboxed environment.
+]=]
+function InstanceSandboxer.wrapArgs(...: any): { any }
+	local args = {...}
+	local visited = {}
+	for i = 1, #args do
+		args[i] = InstanceSandboxer.deepWrap(args[i], nil, nil, visited)
+	end
+	return unpack(args)
+end
+
+--[=[
+	@within InstanceSandboxer
+
+	Deeply unwraps all arguments passed to the function (usually
+	from inside the sandbox), making them ready to be used in a
+	method call on an `Instance`.
+]=]
+function InstanceSandboxer.unwrapArgs(...: any): { any }
+	local args = {...}
+	local visited = {}
+	for i = 1, #args do
+		args[i] = InstanceSandboxer.deepUnwrap(args[i], visited)
+	end
+	return args
 end
 
 return InstanceSandboxer

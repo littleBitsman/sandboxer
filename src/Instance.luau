@@ -18,7 +18,6 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-local othertypeof = require("./typeof")
 local InstanceSandboxer = require("./InstanceSandboxer")
 local InstanceList = require("./InstanceList")
 
@@ -36,15 +35,15 @@ local InstanceMod = {} :: typeof(Instance)
 	Returns a new `Instance` of the given class, wrapping it in a proxy that allows it to be safely used in the sandbox.
 ]=]
 function InstanceMod.new(...: string | Instance): any
-	local class, parent = InstanceSandboxer.requireArguments(1, ...)
-	InstanceSandboxer.requireType(class, "string", `invalid argument #1 to 'new' (string expected, got {othertypeof(class)}`)
+	local class, parent = InstanceSandboxer.requireArguments(1, "new", {"string"}, ...)
+	InstanceSandboxer.requireType(class, "string", `invalid argument #1 to 'new' (string expected, got {InstanceSandboxer.typeof(class)}`)
 	if table.find(InstanceList.DisallowedClasses, class) then
 		return nil
 	end
 	local p: Instance? = nil
 	if parent then
 		p = InstanceSandboxer.unwrap(parent) :: Instance
-		InstanceSandboxer.requireType(p, "Instance", `invalid argument #2 to 'new' (Instance expected, got {othertypeof(parent)}`)
+		InstanceSandboxer.requireType(p, "Instance", `invalid argument #2 to 'new' (Instance expected, got {InstanceSandboxer.typeof(parent)}`)
 	end
 	
 	return InstanceSandboxer.wrapInstance(Instance.new(class, p))
@@ -56,9 +55,9 @@ end
     Returns an `Instance` which is a copy of an existing `Instance`.
 ]=]
 function InstanceMod.fromExisting(...: Instance)
-	local wrappedInstance = InstanceSandboxer.requireArguments(1, ...)	
+	local wrappedInstance = InstanceSandboxer.requireArguments(1, "fromExisting", {"Instance"}, ...)	
 	local inst = InstanceSandboxer.unwrap(wrappedInstance) :: Instance
-	InstanceSandboxer.requireType(inst, "Instance", `invalid argument #1 to 'new' (Instance expected, got {othertypeof(wrappedInstance)}`)
+	InstanceSandboxer.requireType(inst, "Instance", `invalid argument #1 to 'new' (Instance expected, got {InstanceSandboxer.typeof(wrappedInstance)}`)
 	if table.find(InstanceList.DisallowedClasses, inst.ClassName) then
 		return nil
 	end
