@@ -23,7 +23,7 @@ local isWrapped, isWrappedSignal = InstanceList.isWrapped, InstanceList.isWrappe
 
 --[=[
 	@function typeof
-	@param a any The Luau type that will have its type checked.
+	@param a any -- The Luau type that will have its type checked.
 	@return string
 	@within Sandboxer
 	@private
