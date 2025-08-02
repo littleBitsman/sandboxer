@@ -23,9 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	
 	A list of `Instance`s that are allowed or disallowed in the sandbox.
 	
-	You can use this to check if an `Instance` is allowed or disallowed in the sandbox.
-
-	You can also use this to check if an `Instance` or `RBXScriptSignal` is wrapped or not.
+	You can use this to check if an `Instance` is allowed or disallowed in the sandbox,
+	or if an `Instance` or `RBXScriptSignal` is wrapped or not.
 ]=]
 local InstanceList = {}
 
@@ -39,6 +38,11 @@ local DisallowedClasses: {string} = {}
 	`Instance.new` nor `Instance.fromExisting`.
 	
 	Items can be added to the list, but it cannot be overwritten.
+	
+	Changes to this list will be reflected in the sandbox, even if
+	they are made after the sandbox has been initialized. However,
+	if an `Instance` of a disallowed class is already created,
+	it will continue to function as normal.
 ]=]
 InstanceList.DisallowedClasses = DisallowedClasses
 
@@ -52,10 +56,15 @@ local ExplicitDisallow: { [Instance]: boolean } = {
 	@within InstanceList
 	
 	A list of `Instance`s that are explicitly disallowed in the sandbox.
-	This is a mapping of `Instance`s to a boolean value, which indicates whether
+	This is a mapping of `Instance`s to boolean values, which indicate whether
 	the `Instance`'s descendants are allowed or not.
 
 	Items can be added to the list, but it cannot be overwritten.
+
+	Changes to this list will be reflected in the sandbox, even if
+	they are made after the sandbox has been initialized. However,
+	if a blocked `Instance` is already wrapped, it will continue to
+	function as normal.
 ]=]
 InstanceList.ExplicitDisallow = ExplicitDisallow
 
@@ -78,20 +87,26 @@ local Allow: { [Instance]: boolean } = {
 	@within InstanceList
 	
 	A list of `Instance`s that are allowed in the sandbox.
-	This is a mapping of `Instance`s to a boolean value, which indicates whether
+	This is a mapping of `Instance`s to boolean values, which indicate whether
 	the `Instance`'s descendants are allowed or not.
 
 	If any `Instance` is present in this list, but it is disallowed in `ExplicitDisallow`,
 	it will be disallowed in the sandbox.
 
 	Items can be added to the list, but it cannot be overwritten.
+
+	Changes to this list will be reflected in the sandbox, even if
+	they are made after the sandbox has been initialized. However,
+	if a blocked `Instance` is already wrapped, it will continue to
+	function as normal.
 ]=]
 InstanceList.Allow = Allow
 
 --[=[
 	@within InstanceList
 	
-	Checks if an `Instance` is allowed in the sandbox.
+	Checks if an `Instance` is allowed in the sandbox based on
+	`Allow` and `ExplicitDisallow`.
 	
 	@param inst -- The `Instance` to check.
 ]=]

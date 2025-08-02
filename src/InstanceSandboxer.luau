@@ -84,6 +84,7 @@ function InstanceSandboxer.wrapFn(fn: AnyFn): AnyFn
 	if METHOD_CACHE[fn] then
 		return METHOD_CACHE[fn]
 	end
+	-- Wow guys look its debug.info
 	local parameters: number, isVariadic: boolean = debug.info(fn, "a")
 	if parameters == 0 and not isVariadic then
 		local function wrapped()
