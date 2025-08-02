@@ -59,16 +59,16 @@ end
 local GAME_SANDBOXED = InstanceSandboxer.wrapInstance(game)
 local WORKSPACE_SANDBOXED = InstanceSandboxer.wrapInstance(workspace)
 
-local function fprint(...: any)
+function fprint(...: any)
 	print("[SANDBOX SECURITY]", ...)
 end
-local function fwarn(...: any)
+function fwarn(...: any)
 	warn("[SANDBOX SECURITY]", ...)
 end
-local function ferror(msg: string, level: number?)
+function ferror(msg: string, level: number?)
 	error("[SANDBOX SECURITY]" .. msg, level or 0)
 end
-local function fassert(expr: any, msg: string?)
+function fassert(expr: any, msg: string?)
 	assert(expr, "[SANDBOX SECURITY]" .. (msg or "assertion failed!"))
 end
 
