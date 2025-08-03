@@ -38,7 +38,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	- Customizing allowed Instances
 	- Customizing allowed RBXScriptSignals
 	- Customizing allowed methods
-	- Sandboxing functions
 ]=]
 local Sandboxer = {}
 
@@ -104,10 +103,10 @@ function ResolveStringPath(mod: Instance, str: string): Instance?
 				currentInstance = currentInstance:FindFirstChild(resolver)
 			end
 		end
-		
+
 		if not currentInstance then return end
 	end
-	
+
 	return currentInstance
 end
 
@@ -157,7 +156,7 @@ function _hahano()
 
 	-- Log info for auditing
 	fwarn("SANDBOX BREACH:", CallingScript:GetFullName())
-	
+
 	-- Clear environment
 	setfenv(Level, {})
 
@@ -166,7 +165,7 @@ function _hahano()
 		CallingScript.Enabled = false
 		CallingScript:Destroy()
 	end)
-	
+
 	nope()
 end
 
@@ -189,30 +188,63 @@ end
 ]=]
 function Sandboxer:Init()	
 	local CallingFenv, LEVEL = GetHighestEnv()
-	if CallingFenv.game == GAME_SANDBOXED then return end
-	local CallingScript = CallingFenv.script :: BaseScript
-	local WrappedScript = InstanceSandboxer.wrapInstance(CallingScript)
+	if CallingFenv.game == GAME_SANDBOXED then
+		print("[DEBUG] Already sandboxed")
+		return
+	end
+
+	local _source, _line, _name, _parameters, _isVariadic, theFunction = debug.info(LEVEL, "slnaf")
+
+	Sandboxer:Sandbox(theFunction)
+end
+
+--[=[
+	@within Sandboxer
+
+	Sandboxes the given function or the calling script at the specified level.
 	
+	@param fnOrLevel - The function to sandbox or the level to sandbox at.
+	@error If `fnOrLevel` is a number, it must be at least 1.
+]=]
+function Sandboxer:Sandbox(fnOrLevel: ((...any) -> ...any) | number)
+	if typeof(fnOrLevel) == "number" then
+		assert(fnOrLevel >= 1, `level must be at least 1, got {fnOrLevel}`)
+		fnOrLevel += 1
+	else
+		InstanceSandboxer.requireType(fnOrLevel, "function", `expected function or level number, got {typeof(fnOrLevel)}`)
+	end
+
+	local IsValid, CallingFenv = pcall(getfenv, if typeof(fnOrLevel) == "number" then fnOrLevel + 1 else fnOrLevel)
+	if not IsValid then
+		error("invalid level or function", 0)
+	end
+	if CallingFenv.game == GAME_SANDBOXED then
+		print("[DEBUG] Already sandboxed")
+		return
+	end
+	local CallingScript = CallingFenv.script
+	local WrappedScript = InstanceSandboxer.wrapInstance(CallingScript)
+
 	local function _require(a: any)
 		return SafeRequire(a, CallingScript)
 	end
-	
+
 	-- Big boi
 	local fenv = InstanceSandboxer.deepWrap({
 		-- Straightup gone
 		_G = nil,
 		shared = nil,
 		plugin = nil, -- This wouldn't exist anyways...right
-		
+
 		game = GAME_SANDBOXED,
 		Game = GAME_SANDBOXED,
 		workspace = WORKSPACE_SANDBOXED,
 		Workspace = WORKSPACE_SANDBOXED,
 		script = WrappedScript,
-		
+
 		-- Not-so-dangerous-but-still-dangerous stuff
 		xpcall = xpcallIsBad,
-		
+
 		-- Normal stuff
 		print = print,
 		warn = warn,
@@ -236,27 +268,27 @@ function Sandboxer:Init()
 		type = type,
 		typeof = typeof,
 		unpack = unpack,
-		
+
 		-- I'm not sure if this is even used but sure ok
 		_VERSION = _VERSION,
 		settings = settings,
 		UserSettings = UserSettings,
-		
+
 		-- These are the same. WHY ARE THEY NAMED DIFFERENTLY?
 		version = version[1],
 		Version = version[2],
 		elapsedTime = elapsedTime[1],
 		ElapsedTime = elapsedTime[2],
-		
+
 		-- Task (replace the old bad globals with the cool ones)
 		delay = task.delay,
 		spawn = task.spawn,
 		wait = task.wait,
 		task = task,
-		
+
 		tick = tick,
 		time = time, 
-		
+
 		-- Libraries
 		bit32 = bit32,
 		buffer = buffer,
@@ -267,7 +299,7 @@ function Sandboxer:Init()
 		table = table,
 		utf8 = utf8,
 		vector = vector, -- Isn't this just Vector3 lol
-		
+
 		-- Data Types
 		Axes = Axes,
 		BrickColor = BrickColor,
@@ -308,9 +340,13 @@ function Sandboxer:Init()
 		Vector3 = Vector3,
 		Vector3int16 = Vector3int16
 	})
-	
+
+	setmetatable(fenv, {
+		__metatable = __METATABLE
+	})
+
 	-- The end yay
-	setfenv(LEVEL, fenv)
+	setfenv(fnOrLevel, fenv)
 end
 
 Sandboxer.typeof = InstanceSandboxer.typeof

@@ -88,16 +88,16 @@ function InstanceSandboxer.wrapFn(fn: AnyFn): AnyFn
 	local parameters: number, isVariadic: boolean = debug.info(fn, "a")
 	if parameters == 0 and not isVariadic then
 		local function wrapped()
-			return unpack(InstanceSandboxer.wrapArgs(fn()))
+			return InstanceSandboxer.wrapArgs(fn())
 		end
 		METHOD_CACHE[fn] = wrapped
 	else
 		local function wrapped(...)
-			return unpack(InstanceSandboxer.wrapArgs(fn(unpack(InstanceSandboxer.unwrapArgs(...)))))
+			return InstanceSandboxer.wrapArgs(fn(InstanceSandboxer.unwrapArgs(...)))
 		end
 		METHOD_CACHE[fn] = wrapped
 	end
-	
+
 	return METHOD_CACHE[fn]
 end
 InstanceSandboxer.typeof = InstanceSandboxer.wrapFn(typeof)
@@ -156,7 +156,7 @@ end
 	@return any -- The wrapped `Instance`.
 ]=]
 function InstanceSandboxer.wrapInstance(instance: Instance): any?
-	if not InstanceList.instanceAllowed(instance) then
+	if not instance or not InstanceList.instanceAllowed(instance) then
 		return nil
 	end
 
@@ -401,7 +401,7 @@ end
 	Deeply wraps all arguments passed to the function, making
 	them ready to be returned to the sandboxed environment.
 ]=]
-function InstanceSandboxer.wrapArgs(...: any): { any }
+function InstanceSandboxer.wrapArgs(...: any): ...any
 	local args = {...}
 	local visited = {}
 	for i = 1, #args do
@@ -417,13 +417,16 @@ end
 	from inside the sandbox), making them ready to be used in a
 	method call on an `Instance`.
 ]=]
-function InstanceSandboxer.unwrapArgs(...: any): { any }
+function InstanceSandboxer.unwrapArgs(...: any): ...any
+	if select(1, ...) == nil then
+		return nil
+	end
 	local args = {...}
 	local visited = {}
 	for i = 1, #args do
 		args[i] = InstanceSandboxer.deepUnwrap(args[i], visited)
 	end
-	return args
+	return unpack(args)
 end
 
 return InstanceSandboxer
