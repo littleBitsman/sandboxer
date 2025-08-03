@@ -189,7 +189,6 @@ end
 function Sandboxer:Init()	
 	local CallingFenv, LEVEL = GetHighestEnv()
 	if CallingFenv.game == GAME_SANDBOXED then
-		print("[DEBUG] Already sandboxed")
 		return
 	end
 
@@ -219,7 +218,6 @@ function Sandboxer:Sandbox(fnOrLevel: ((...any) -> ...any) | number)
 		error("invalid level or function", 0)
 	end
 	if CallingFenv.game == GAME_SANDBOXED then
-		print("[DEBUG] Already sandboxed")
 		return
 	end
 	local CallingScript = CallingFenv.script
