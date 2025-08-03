@@ -42,11 +42,11 @@ local LOCKED = "The metatable is locked"
 
 --[=[
 	@within InstanceSandboxer
-	@type AnyFn (...any) -> (...any)
+	@type AnyFn (...any) -> ...any
 
 	Function type that all functions can be reduced to.
 ]=]
-export type AnyFn = (...any) -> (...any)
+export type AnyFn = (...any) -> ...any
 local METHOD_CACHE: { [AnyFn]: AnyFn } = setmetatable({}, { __mode = "k" }) :: any
 
 --[=[
