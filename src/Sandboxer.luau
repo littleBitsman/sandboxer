@@ -203,12 +203,12 @@ end
 
 	Sandboxes the given function or the calling script at the specified level.
 	
-	@param fnOrLevel - The function to sandbox or the level to sandbox at.
-	@error If `fnOrLevel` is a number, it must be at least 1.
+	@param fnOrLevel -- The function to sandbox or the level to sandbox at.
+	@error "level must be at least 1" -- If `fnOrLevel` is a number, it must be at least 1.
 ]=]
 function Sandboxer:Sandbox(fnOrLevel: ((...any) -> ...any) | number)
 	if typeof(fnOrLevel) == "number" then
-		assert(fnOrLevel >= 1, `level must be at least 1, got {fnOrLevel}`)
+		assert(fnOrLevel >= 1, "level must be at least 1")
 		fnOrLevel += 1
 	else
 		InstanceSandboxer.requireType(fnOrLevel, "function", `expected function or level number, got {typeof(fnOrLevel)}`)
