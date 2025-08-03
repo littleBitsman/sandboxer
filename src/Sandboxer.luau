@@ -45,6 +45,8 @@ local __METATABLE = "No."
 local InstanceSandboxer = require("@self/InstanceSandboxer")
 local InstanceMod = require("@self/Instance")
 
+local LOADSTRING_ENABLED = pcall(loadstring, "return nil")
+
 -- Thank you roblox, very cool! (deprecation warnings - WHO CARES)
 local getfenv, setfenv = getfenv, setfenv
 local version, elapsedTime do
@@ -113,6 +115,9 @@ end
 local realrequire = require
 function SafeRequire(module: (Instance | string | number)?, caller: Instance): any
 	if typeof(module) == "string" then
+		if not caller then
+			error(`Unable to require module from given path '{module}'`, 0)
+		end
 		local new = ResolveStringPath(caller, module)
 		if not new or not InstanceSandboxer.instanceAllowed(new) then
 			new = nil
@@ -203,9 +208,9 @@ end
 	Sandboxes the given function or the calling script at the specified level.
 	
 	@param fnOrLevel -- The function to sandbox or the level to sandbox at.
-	@error "level must be at least 1" -- If `fnOrLevel` is a number, it must be at least 1.
+	@error "level must be at least 1" -- If fnOrLevel is a number, it must be at least 1.
 ]=]
-function Sandboxer:Sandbox(fnOrLevel: ((...any) -> ...any) | number)
+function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 	if typeof(fnOrLevel) == "number" then
 		assert(fnOrLevel >= 1, "level must be at least 1")
 		fnOrLevel += 1
@@ -227,12 +232,12 @@ function Sandboxer:Sandbox(fnOrLevel: ((...any) -> ...any) | number)
 		return SafeRequire(a, CallingScript)
 	end
 
+	local self_G = {}
+
 	-- Big boi
 	local fenv = InstanceSandboxer.deepWrap({
-		-- Straightup gone
-		_G = nil,
-		shared = nil,
-		plugin = nil, -- This wouldn't exist anyways...right
+		_G = self_G,
+		shared = self_G,
 
 		game = GAME_SANDBOXED,
 		Game = GAME_SANDBOXED,
@@ -345,6 +350,38 @@ function Sandboxer:Sandbox(fnOrLevel: ((...any) -> ...any) | number)
 
 	-- The end yay
 	setfenv(fnOrLevel, fenv)
+end
+
+--[=[
+	@within Sandboxer
+
+	Loads the Luau chunk `src` as a function using `loadstring` and 
+	sandboxes it. **`ServerScriptService.LoadStringEnabled` must be `true`
+	for this to work as per the `loadstring` rules.**
+
+	@param src -- The specified string to be loaded as Luau code.
+	@param chunkname -- An optional chunk name for error messages and debug information.
+
+	@error "loadstring() is not available" -- ServerScriptService.LoadStringEnabled was false.
+]=]
+function Sandboxer:SandboxString(src: string, chunkname: string): InstanceSandboxer.AnyFn
+	if LOADSTRING_ENABLED then
+		local success, fn: InstanceSandboxer.AnyFn?, luaError: string? = pcall(loadstring, src, chunkname)
+
+		if not success then
+			-- fn is the error
+			error(fn, 0)
+		elseif not fn then
+			-- luaError will exist if fn is nil
+			error(luaError, 0)
+		end
+
+		Sandboxer:Sandbox(fn)
+
+		return fn
+	else
+		error("loadstring() is not available", 0)
+	end
 end
 
 Sandboxer.typeof = InstanceSandboxer.typeof
