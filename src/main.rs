@@ -10,10 +10,6 @@ fn module_script_with_source(name: &str, source: String) -> InstanceBuilder {
 }
 
 fn main() {
-    println!("{:?}", std::fs::read_dir("../").unwrap().collect::<Vec<_>>());
-    println!("{:?}", std::fs::read_dir("./").unwrap().collect::<Vec<_>>());
-    println!("{:?}", std::fs::read_dir("./src").unwrap().collect::<Vec<_>>());
-
     let license = {
         let license = read_to_string("LICENSE").expect("Failed to read LICENSE file");
         let mut final_license = String::with_capacity(license.len() + 80);
@@ -26,15 +22,15 @@ fn main() {
     };
 
     let sandboxer_source =
-        read_to_string("src/Sandboxer.lua").expect("Failed to read Sandboxer.lua");
+        read_to_string("./src/Sandboxer.lua").expect("Failed to read Sandboxer.lua");
 
-    let instance_source = read_to_string("src/Instance.lua").expect("Failed to read Instance.lua");
+    let instance_source = read_to_string("./src/Instance.lua").expect("Failed to read Instance.lua");
 
     let instancelist_source =
-        read_to_string("src/InstanceList.lua").expect("Failed to read InstanceList.lua");
+        read_to_string("./src/InstanceList.lua").expect("Failed to read InstanceList.lua");
 
     let instancesandboxer_source =
-        read_to_string("src/InstanceSandboxer.lua").expect("Failed to read InstanceSandboxer.lua");
+        read_to_string("./src/InstanceSandboxer.lua").expect("Failed to read InstanceSandboxer.lua");
 
     let dom = WeakDom::new(
         InstanceBuilder::new("ModuleScript")
