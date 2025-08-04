@@ -73,7 +73,7 @@ jobs:
         name: Sandboxer.rbxm
         path: .
 
-    - uses: mikepenz/release-changelog-builder-action
+    - uses: mikepenz/release-changelog-builder-action@v5
       id: changelog
       with:
         mode: HYBRID
