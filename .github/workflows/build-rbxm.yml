@@ -1,0 +1,89 @@
+name: Build RBXM
+
+on:
+  push:
+    paths:
+      - 'src/**'
+      - '.github/workflows/build-rbxm.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-rbxm:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Luau source
+      uses: actions/checkout@v4
+
+    - name: Checkout Rust builder
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository }}
+        ref: rbxm-builder
+        path: rbxm-builder
+
+    - name: Install Rust (stable)
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
+
+    - name: Build rbxm-builder
+      run: cargo build --release
+      working-directory: rbxm-builder
+
+    - name: Run builder to create Sandboxer.rbxm
+      run: ./rbxm-builder/target/release/rbxm-builder > Sandboxer.rbxm
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: Sandboxer.rbxm
+        path: Sandboxer.rbxm
+
+  commit-to-main:
+    needs: build-rbxm
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: Sandboxer.rbxm
+        path: .
+
+    - name: Commit and push .rbxm
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@users.noreply.github.com"
+        git add Sandboxer.rbxm
+        git commit -m "Update Sandboxer.rbxm"
+        git push
+
+  release:
+    needs: build-rbxm
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: Sandboxer.rbxm
+        path: .
+
+    - uses: mikepenz/release-changelog-builder-action
+      id: changelog
+      with:
+        mode: HYBRID
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        body: ${{ steps.changelog.outputs.changelog }}
+        files: Sandboxer.rbxm
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
