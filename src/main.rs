@@ -22,15 +22,15 @@ fn main() {
     };
 
     let sandboxer_source =
-        read_to_string("./src/Sandboxer.lua").expect("Failed to read Sandboxer.lua");
+        read_to_string("./src/Sandboxer.luau").expect("Failed to read Sandboxer.luau");
 
-    let instance_source = read_to_string("./src/Instance.lua").expect("Failed to read Instance.lua");
+    let instance_source = read_to_string("./src/Instance.luau").expect("Failed to read Instance.luau");
 
     let instancelist_source =
-        read_to_string("./src/InstanceList.lua").expect("Failed to read InstanceList.lua");
+        read_to_string("./src/InstanceList.luau").expect("Failed to read InstanceList.luau");
 
     let instancesandboxer_source =
-        read_to_string("./src/InstanceSandboxer.lua").expect("Failed to read InstanceSandboxer.lua");
+        read_to_string("./src/InstanceSandboxer.luau").expect("Failed to read InstanceSandboxer.luau");
 
     let dom = WeakDom::new(
         InstanceBuilder::new("ModuleScript")
