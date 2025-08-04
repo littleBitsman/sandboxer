@@ -10,6 +10,10 @@ fn module_script_with_source(name: &str, source: String) -> InstanceBuilder {
 }
 
 fn main() {
+    println!("{:?}", std::fs::read_dir("../").unwrap().collect::<Vec<_>>());
+    println!("{:?}", std::fs::read_dir("./").unwrap().collect::<Vec<_>>());
+    println!("{:?}", std::fs::read_dir("./src").unwrap().collect::<Vec<_>>());
+
     let license = {
         let license = read_to_string("LICENSE").expect("Failed to read LICENSE file");
         let mut final_license = String::with_capacity(license.len() + 80);
