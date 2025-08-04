@@ -34,7 +34,7 @@ jobs:
       working-directory: rbxm-builder
 
     - name: Run builder to create Sandboxer.rbxm
-      run: ./rbxm-builder/target/release/rbxm-builder > Sandboxer.rbxm
+      run: ./rbxm-builder/target/release/rbxm-builder
 
     - uses: actions/upload-artifact@v4
       with:
