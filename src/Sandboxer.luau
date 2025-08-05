@@ -220,7 +220,7 @@ local SANDBOX_CONFIG: { [string]: boolean } = {}
 
 	@param config -- A table containing the configuration for the sandbox.
 
-	@return success -- Whether the operation was *completely* successful.
+	@return boolean -- Whether the operation was *completely* successful.
 ]=]
 function Sandboxer.EditDefaultSandbox(config: { [string]: any }): boolean
 	local success = true
