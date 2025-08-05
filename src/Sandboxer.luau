@@ -273,7 +273,7 @@ end
 function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 	if typeof(fnOrLevel) == "number" then
 		assert(fnOrLevel >= 1, "level must be at least 1")
-		fnOrLevel += 1
+		fnOrLevel += 1 -- add depth for this function
 	else
 		InstanceSandboxer.requireType(fnOrLevel, "function", `expected function or level number, got {typeof(fnOrLevel)}`)
 	end
@@ -455,6 +455,7 @@ function Sandboxer:SandboxString(src: string, chunkname: string): InstanceSandbo
 end
 
 Sandboxer.typeof = InstanceSandboxer.typeof
+Sandboxer.InstanceList = require("@self/InstanceList")
 
 return setmetatable(Sandboxer, {
 	__index = nope,
