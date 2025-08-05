@@ -174,6 +174,66 @@ function _hahano()
 	nope()
 end
 
+local ForbiddenGlobals: { [any]: boolean } = {
+	[getfenv] = true,
+	[setfenv] = true,
+	[loadstring] = true,
+	[newproxy] = true,
+	[debug] = true,
+}
+local SANDBOX_CONFIG: { [string]: boolean } = {}
+
+--[=[
+	@within Sandboxer
+
+	Edits the default sandbox configuration. This is used to add or remove certain
+	globals in the sandbox environment.
+
+	The config is saved and will be used for all future sandboxes **made AFTER this
+	function is called**. Calls to this will overwrite previous values, if any.
+
+	Due to dictionary limitations, values cannot be set to `nil`. To remove a global,
+	set the value to `false`.
+
+	The following globals are **always** removed from the sandbox:
+	- `getfenv`
+	- `setfenv`
+	- `loadstring`
+	- `newproxy`
+	- `debug` (library)
+
+	Attempting to add these functions/libraries will result in them being ignored.
+	However, you can set them to other values, such as a custom function.
+	This will also allow you to overwrite already sandboxed globals, such as `game`.
+	
+	The sandboxer will make **no attempt** to secure custom functions, so use them
+	at your own risk. The only change that will occur is that if the function returns
+	`Instance`s, they will be wrapped, and if wrapped `Instance`s are passed to the
+	function, they will be unwrapped.
+
+	Do note that the environment table passed to `setfenv` does NOT have a metatable,
+	unlike Roblox's default environment. 
+
+	The function will return `true` if the operation was completely successful
+	(i.e., all values were set on the configuration table) and `false` if any 
+	of the keys or values were forbidden globals.
+
+	@param config -- A table containing the configuration for the sandbox.
+
+	@return success -- Whether the operation was *completely* successful.
+]=]
+function Sandboxer.EditDefaultSandbox(config: { [string]: any }): boolean
+	local success = true
+	for key, value in config do
+		if not (ForbiddenGlobals[value] or ForbiddenGlobals[key]) then
+			SANDBOX_CONFIG[key] = value
+		else
+			success = false
+		end
+	end
+	return success
+end
+
 --[=[
 	@within Sandboxer
 
@@ -263,7 +323,9 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		rawset = rawset,
 		rawequal = rawequal,
 		rawlen = rawlen,
-		require = require,
+		require = function(a: any)
+			return SafeRequire(a, CallingScript)
+		end,
 		select = select,
 		setmetatable = setmetatable,
 		tonumber = tonumber,
@@ -343,6 +405,14 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		Vector3 = Vector3,
 		Vector3int16 = Vector3int16
 	})
+
+	for key, value in SANDBOX_CONFIG do
+		if value == false then
+			fenv[key] = nil
+		else
+			fenv[key] = value
+		end
+	end
 
 	setmetatable(fenv, {
 		__metatable = __METATABLE
