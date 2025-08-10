@@ -347,7 +347,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 
 		-- Task (replace the old bad globals with the cool ones)
 		delay = task.delay,
-		spawn = task.spawn,
+		spawn = task.defer,
 		wait = task.wait,
 		task = task,
 
