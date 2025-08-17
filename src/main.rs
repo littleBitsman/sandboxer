@@ -4,7 +4,7 @@ use rbx_binary::to_writer;
 use rbx_dom_weak::{InstanceBuilder, WeakDom};
 
 fn module_script_with_source(name: &str, source: String) -> InstanceBuilder {
-    InstanceBuilder::new("ModuleScript")
+    InstanceBuilder::with_property_capacity("ModuleScript", 1)
         .with_name(name)
         .with_property("Source", source)
 }
@@ -24,16 +24,17 @@ fn main() {
     let sandboxer_source =
         read_to_string("./src/Sandboxer.luau").expect("Failed to read Sandboxer.luau");
 
-    let instance_source = read_to_string("./src/Instance.luau").expect("Failed to read Instance.luau");
+    let instance_source =
+        read_to_string("./src/Instance.luau").expect("Failed to read Instance.luau");
 
     let instancelist_source =
         read_to_string("./src/InstanceList.luau").expect("Failed to read InstanceList.luau");
 
-    let instancesandboxer_source =
-        read_to_string("./src/InstanceSandboxer.luau").expect("Failed to read InstanceSandboxer.luau");
+    let instancesandboxer_source = read_to_string("./src/InstanceSandboxer.luau")
+        .expect("Failed to read InstanceSandboxer.luau");
 
     let dom = WeakDom::new(
-        InstanceBuilder::new("ModuleScript")
+        InstanceBuilder::with_property_capacity("ModuleScript", 1)
             .with_name("Sandboxer")
             .with_property("Source", sandboxer_source)
             .with_children([
@@ -41,7 +42,7 @@ fn main() {
                 module_script_with_source("InstanceList", instancelist_source),
                 module_script_with_source("InstanceSandboxer", instancesandboxer_source),
                 module_script_with_source("LICENSE", license),
-            ])
+            ]),
     );
 
     let file = File::create("Sandboxer.rbxm").expect("Failed to open Sandboxer.rbxm");
