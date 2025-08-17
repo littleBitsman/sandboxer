@@ -18,6 +18,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+debug.setmemorycategory("Sandboxer")
+
 -- Before you ask why this script is HORRIBLY unorganized:
 -- Blame --!strict mode. (Key 'whateverfunction' not found 
 -- in table InstanceSandboxer) is my WORST ENEMY.

@@ -18,6 +18,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+debug.setmemorycategory("Sandboxer")
+
 local InstanceSandboxer = require("./InstanceSandboxer")
 local InstanceList = require("./InstanceList")
 
@@ -28,7 +30,7 @@ local InstanceList = require("./InstanceList")
 	and wraps the returned values in a proxy that allows them to be safely used in 
 	the sandbox.
 ]=]
-local InstanceMod = {} :: typeof(Instance)
+local InstanceMod = {}
 --[=[
 	@within InstanceConstructors
 
@@ -63,4 +65,4 @@ function InstanceMod.fromExisting(...: Instance)
 	end
 	return InstanceSandboxer.wrapInstance(Instance.fromExisting(inst))
 end
-return table.freeze(InstanceMod)
+return table.freeze(InstanceMod :: any) :: typeof(Instance)
