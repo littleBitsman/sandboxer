@@ -18,6 +18,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
+-- Before you ask why this script is HORRIBLY unorganized:
+-- Blame --!strict mode. (Key 'whateverfunction' not found 
+-- in table InstanceSandboxer) is my WORST ENEMY.
+
 --[=[
 	@class InstanceSandboxer
 
@@ -28,17 +32,25 @@ local InstanceSandboxer = {}
 local InstanceList = require("./InstanceList")
 local WRAPPED, UNWRAP = InstanceList.WRAPPED, InstanceList.UNWRAP
 local WRAPPED_SIGNAL, UNWRAP_SIGNAL = InstanceList.WRAPPED_SIGNALS, InstanceList.UNWRAP_SIGNALS
-InstanceSandboxer.unwrap = InstanceList.unwrap
-InstanceSandboxer.isWrapped = InstanceList.isWrapped
-InstanceSandboxer.isWrappedSignal = InstanceList.isWrappedSignal
-InstanceSandboxer.instanceAllowed = InstanceList.instanceAllowed
 
--- Thank you Luau, very cool!
-InstanceSandboxer.wrapArgs = nil :: any
+-- Thank you Luau, very cool! (WHY DOES TYPE CHECKER MAKE ME DO THIS BROOOOOOOOOOOOO)
+InstanceSandboxer.deepWrap = nil :: any
+InstanceSandboxer.deepUnwrap = nil :: any
+InstanceSandboxer.isWrapped = nil :: any
+InstanceSandboxer.isWrappedSignal = nil :: any
+InstanceSandboxer.typeof = nil :: any
+InstanceSandboxer.unwrap = nil :: any
 InstanceSandboxer.unwrapArgs = nil :: any
+InstanceSandboxer.wrapArgs = nil :: any
+InstanceSandboxer.wrapFn = nil :: any
+InstanceSandboxer.wrapEvent = nil :: any
+InstanceSandboxer.wrapInstance = nil :: any
 
 local MATH = {"add", "sub", "mul", "div", "idiv", "mod", "unm", "pow"}
 local LOCKED = "The metatable is locked"
+local INDEX_FAIL = function(self, k: string, ...): never
+	error(`{k} is not a valid member of {InstanceSandboxer.typeof(self)}`, 0)
+end
 
 --[=[
 	@within InstanceSandboxer
@@ -48,193 +60,6 @@ local LOCKED = "The metatable is locked"
 ]=]
 export type AnyFn = (...any) -> ...any
 local METHOD_CACHE: { [AnyFn]: AnyFn } = setmetatable({}, { __mode = "k" }) :: any
-
---[=[
-	@within InstanceSandboxer
-	@private
-
-	Requires a specific number of arguments to be passed to the function.
-	If not enough arguments are passed, it will throw an error.
-	
-	@param count number -- The number of arguments required.
-	@param ... any
-	@return ...any -- The variadic arguments passed to the function.
-]=]
-function InstanceSandboxer.requireArguments(count: number, fn: string, types: {string}, ...): ...any
-	local n = select("#", ...)
-	if n < count then
-		error(`missing argument #{n + 1}` 
-			.. (types and types[n + 1]) and ` to '{fn}' ({types[n + 1]} expected)` or "", 
-			0
-		)
-	end
-	return ...
-end
-
---[=[
-	@within InstanceSandboxer
-
-	Wraps a function in a proxy that allows it to be safely used in the sandbox.
-	The wrapped function will return wrapped arguments when called.
-
-	@param fn AnyFn -- The function to wrap.
-	@return AnyFn -- The wrapped function.
-]=]
-function InstanceSandboxer.wrapFn(fn: AnyFn): AnyFn
-	if METHOD_CACHE[fn] then
-		return METHOD_CACHE[fn]
-	end
-	-- Wow guys look its debug.info
-	local parameters: number, isVariadic: boolean = debug.info(fn, "a")
-	if parameters == 0 and not isVariadic then
-		local function wrapped()
-			return InstanceSandboxer.wrapArgs(fn())
-		end
-		METHOD_CACHE[fn] = wrapped
-	else
-		local function wrapped(...)
-			return InstanceSandboxer.wrapArgs(fn(InstanceSandboxer.unwrapArgs(...)))
-		end
-		METHOD_CACHE[fn] = wrapped
-	end
-
-	return METHOD_CACHE[fn]
-end
-InstanceSandboxer.typeof = InstanceSandboxer.wrapFn(typeof)
-local NEWINDEX_FAIL = function(self, k: string, _: any)
-	error(`{k} is not a valid member of {InstanceSandboxer.typeof(self)}`)
-end
-
-function InstanceSandboxer.requireType(item: any, ty: string, err: string?)
-	if typeof(item) ~= ty then
-		error(err or `Expected {ty}, got {typeof(item)}`, 0)
-	end
-end
-
-local DEFAULT_METATABLE: { [string]: any } = {} do
-	DEFAULT_METATABLE.__call = function(self, ...)
-		error(`attempt to call a {InstanceSandboxer.typeof(self)} value`, 0)
-	end
-	DEFAULT_METATABLE.__concat = function(self, v)
-		error(`attempt to concatenate {InstanceSandboxer.typeof(self)} with {InstanceSandboxer.typeof(v)}`, 0)
-	end
-
-	for _, math in MATH do
-		DEFAULT_METATABLE[`__{math}`] = function(self)
-			error(`attempt to perform arithmetic ({math}) on {InstanceSandboxer.typeof(self)}`, 0)
-		end
-	end
-
-	DEFAULT_METATABLE.__le = function(lhs, rhs)
-		local lhsTy = InstanceSandboxer.typeof(lhs)
-		local rhsTy = InstanceSandboxer.typeof(rhs)
-		error(`attempt to compare {lhsTy} < {rhsTy}`, 0)
-	end
-	DEFAULT_METATABLE.__lt = function(lhs, rhs)
-		local lhsTy = InstanceSandboxer.typeof(lhs)
-		local rhsTy = InstanceSandboxer.typeof(rhs)
-		error(`attempt to compare {lhsTy} <= {rhsTy}`, 0)
-	end
-	DEFAULT_METATABLE.__len = function(self)
-		error(`attempt to get length of a {InstanceSandboxer.typeof(self)} value`, 0)
-	end
-	DEFAULT_METATABLE.__iter = function(self)
-		error(`attempt to iterate over a {InstanceSandboxer.typeof(self)} value`, 0)
-	end
-
-	DEFAULT_METATABLE.__metatable = LOCKED
-end
-
---[=[
-	@within InstanceSandboxer
-
-	Wraps an `Instance` in a proxy that allows it to be safely used in the sandbox.
-	The proxy will have the same properties, methods, and events as the `Instance`, 
-	but will return wrapped arguments when accessed.
-
-	@param instance Instance -- The `Instance` to wrap.
-	@return any -- The wrapped `Instance`.
-]=]
-function InstanceSandboxer.wrapInstance(instance: Instance): any?
-	if not instance or not InstanceList.instanceAllowed(instance) then
-		return nil
-	end
-
-	if WRAPPED[instance] then
-		return WRAPPED[instance]
-	end
-
-	local proxy = newproxy(true)
-	local mt = getmetatable(proxy)
-
-	local function check(a: any)
-		if InstanceSandboxer.unwrap(a) ~= InstanceSandboxer.unwrap(proxy) or not rawequal(a, proxy) then
-			error("unreachable", 0)
-		end
-	end
-
-	mt.__index = function(self: any, key: any): any
-		check(self)
-		key = InstanceSandboxer.deepUnwrap(key)
-		local success, value = pcall(function()
-			return (instance :: any)[key]
-		end)
-
-		if not success then
-			error(`{key} is not a valid member of {instance.ClassName} "{instance.Name}"`, 0)
-		end
-
-		return InstanceSandboxer.deepWrap(value, instance, key)
-	end
-
-	mt.__newindex = function(self: any, key: any, value: any)
-		check(self)
-		key = InstanceSandboxer.deepUnwrap(key)
-		value = InstanceSandboxer.deepUnwrap(value)
-		local s = pcall(function()
-			(instance :: any)[key] = value
-		end)
-		if not s then
-			error(`{key} is not a valid member of {instance.ClassName} "{instance.Name}"`, 0)
-		end
-	end
-
-	mt.__tostring = function(self: any)
-		check(self)
-		return tostring(instance)
-	end
-	mt.__eq = function(self: any, rhs: any)
-		check(self)
-		return InstanceSandboxer.unwrap(self) == InstanceSandboxer.unwrap(rhs) and rawequal(self, rhs)
-	end
-
-	--[[ the error-y ones: 
-		- __call 	(object())
-		- __concat 	(object .. any)
-		- __unm 	(-object)
-		- __add 	(object + any)
-		- __sub 	(object - any)
-		- __mul 	(object * any)
-		- __div 	(object / any)
-		- __idiv 	(object // any)
-		- __mod 	(object % any)
-		- __pow 	(object ^ any)
-		- __lt		(object < any)
-		- __le  	(object <= any)
-		- __len 	(#object)
-		- __iter 	(for k, v in object)
-		
-		As well as __metatable
-	]]
-	for k, v in DEFAULT_METATABLE do
-		mt[k] = v
-	end
-
-	WRAPPED[instance] = proxy
-	UNWRAP[proxy] = instance
-
-	return proxy
-end
 
 --[=[
 	@within InstanceSandboxer
@@ -279,7 +104,6 @@ function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, p
 		return v
 	end
 end
-
 --[=[
 	@within InstanceSandboxer
 
@@ -314,6 +138,147 @@ function InstanceSandboxer.deepUnwrap(v: any, pvisited: { [any]: any }?): any
 	else
 		return v
 	end
+end
+
+InstanceSandboxer.isWrapped = InstanceList.isWrapped
+InstanceSandboxer.isWrappedSignal = InstanceList.isWrappedSignal
+InstanceSandboxer.unwrap = InstanceList.unwrap
+--[=[
+	@within InstanceSandboxer
+
+	Deeply unwraps all arguments passed to the function (usually
+	from inside the sandbox), making them ready to be used in a
+	method call on an `Instance`.
+]=]
+function InstanceSandboxer.unwrapArgs(...: any): ...any
+	if select(1, ...) == nil then
+		return nil
+	end
+	local args = {...}
+	local visited = {}
+	for i = 1, #args do
+		args[i] = InstanceSandboxer.deepUnwrap(args[i], visited)
+	end
+	return unpack(args)
+end
+
+--[=[
+	@within InstanceSandboxer
+
+	Deeply wraps all arguments passed to the function, making
+	them ready to be returned to the sandboxed environment.
+]=]
+function InstanceSandboxer.wrapArgs(...: any): ...any
+	local args = {...}
+	local visited = {}
+	for i = 1, #args do
+		args[i] = InstanceSandboxer.deepWrap(args[i], nil, nil, visited)
+	end
+	return unpack(args)
+end
+
+--[=[
+	@within InstanceSandboxer
+
+	Wraps a function in a proxy that allows it to be safely used in the sandbox.
+	The wrapped function will return wrapped arguments when called.
+
+	@param fn AnyFn -- The function to wrap.
+	@return AnyFn -- The wrapped function.
+]=]
+function InstanceSandboxer.wrapFn(fn: AnyFn): AnyFn
+	if METHOD_CACHE[fn] then
+		return METHOD_CACHE[fn]
+	end
+	-- Wow guys look its debug.info
+	local parameters: number, isVariadic: boolean = debug.info(fn, "a")
+	if parameters == 0 and not isVariadic then
+		local function wrapped()
+			return InstanceSandboxer.wrapArgs(fn())
+		end
+		METHOD_CACHE[fn] = wrapped
+	else
+		local function wrapped(...)
+			return InstanceSandboxer.wrapArgs(fn(InstanceSandboxer.unwrapArgs(...)))
+		end
+		METHOD_CACHE[fn] = wrapped
+	end
+
+	return METHOD_CACHE[fn]
+end
+InstanceSandboxer.typeof = InstanceSandboxer.wrapFn(typeof)
+
+local DEFAULT_METATABLE: { [string]: any } = {} do
+	local function check(a: any): Instance
+		if WRAPPED[UNWRAP[a]] ~= a then
+			error("unreachable", 0)
+		else
+			return UNWRAP[a]
+		end
+	end
+	DEFAULT_METATABLE.__index = function(self: any, key: any): any
+		local inst = check(self)
+		key = InstanceSandboxer.deepUnwrap(key)
+		local success, value = pcall(function()
+			return (inst :: any)[key]
+		end)
+
+		if not success then
+			error(`{key} is not a valid member of {inst.ClassName} "{inst.Name}"`, 0)
+		end
+
+		return InstanceSandboxer.deepWrap(value, inst, key)
+	end
+	DEFAULT_METATABLE.__newindex = function(self: any, key: any, value: any)
+		local inst = check(self)
+		key = InstanceSandboxer.deepUnwrap(key)
+		value = InstanceSandboxer.deepUnwrap(value)
+		local s = pcall(function()
+			(inst :: any)[key] = value
+		end)
+		if not s then
+			INDEX_FAIL(self, key)
+		end
+	end
+
+	DEFAULT_METATABLE.__tostring = function(self: any)
+		return tostring(check(self))
+	end
+	DEFAULT_METATABLE.__eq = function(self: any, rhs: any)
+		check(self)
+		return InstanceSandboxer.unwrap(self) == InstanceSandboxer.unwrap(rhs) and rawequal(self, rhs)
+	end
+	DEFAULT_METATABLE.__call = function(self, ...)
+		error(`attempt to call a {InstanceSandboxer.typeof(self)} value`, 0)
+	end
+	DEFAULT_METATABLE.__concat = function(self, v)
+		error(`attempt to concatenate {InstanceSandboxer.typeof(self)} with {InstanceSandboxer.typeof(v)}`, 0)
+	end
+
+	for _, math in MATH do
+		DEFAULT_METATABLE[`__{math}`] = function(self)
+			error(`attempt to perform arithmetic ({math}) on {InstanceSandboxer.typeof(self)}`, 0)
+		end
+	end
+
+	DEFAULT_METATABLE.__le = function(lhs, rhs)
+		local lhsTy = InstanceSandboxer.typeof(lhs)
+		local rhsTy = InstanceSandboxer.typeof(rhs)
+		error(`attempt to compare {lhsTy} < {rhsTy}`, 0)
+	end
+	DEFAULT_METATABLE.__lt = function(lhs, rhs)
+		local lhsTy = InstanceSandboxer.typeof(lhs)
+		local rhsTy = InstanceSandboxer.typeof(rhs)
+		error(`attempt to compare {lhsTy} <= {rhsTy}`, 0)
+	end
+	DEFAULT_METATABLE.__len = function(self)
+		error(`attempt to get length of a {InstanceSandboxer.typeof(self)} value`, 0)
+	end
+	DEFAULT_METATABLE.__iter = function(self)
+		error(`attempt to iterate over a {InstanceSandboxer.typeof(self)} value`, 0)
+	end
+
+	DEFAULT_METATABLE.__metatable = LOCKED
 end
 
 local SIGNAL_WRAPPER = {
@@ -356,7 +321,7 @@ local SIGNAL_INDEX_METAMETHOD = function(self: any, k: any)
 	if fn then
 		return fn
 	else
-		error(`{k} is not a valid member of RBXScriptSignal`, 0)
+		return INDEX_FAIL(self, k)
 	end
 end
 --[=[
@@ -377,16 +342,18 @@ function InstanceSandboxer.wrapEvent(signal: RBXScriptSignal, name: string): any
 	local proxy = newproxy(true)
 	local metatable = getmetatable(proxy)
 
+	-- Borrow the same metatable, but we're going to overwrite 
+	-- __index, __newindex, and __tostring
+	for k, v in DEFAULT_METATABLE do
+		metatable[k] = v
+	end
+
 	metatable.__index = SIGNAL_INDEX_METAMETHOD
-	metatable.__newindex = NEWINDEX_FAIL
+	metatable.__newindex = INDEX_FAIL
 
 	local STRING = `Signal {name}`
 	metatable.__tostring = function()
 		return STRING
-	end
-
-	for k, v in DEFAULT_METATABLE do
-		metatable[k] = v
 	end
 
 	WRAPPED_SIGNAL[signal] = proxy
@@ -398,35 +365,52 @@ end
 --[=[
 	@within InstanceSandboxer
 
-	Deeply wraps all arguments passed to the function, making
-	them ready to be returned to the sandboxed environment.
-]=]
-function InstanceSandboxer.wrapArgs(...: any): ...any
-	local args = {...}
-	local visited = {}
-	for i = 1, #args do
-		args[i] = InstanceSandboxer.deepWrap(args[i], nil, nil, visited)
-	end
-	return unpack(args)
-end
+	Wraps an `Instance` in a proxy that allows it to be safely used in the sandbox.
+	The proxy will have the same properties, methods, and events as the `Instance`, 
+	but will return wrapped arguments when accessed.
 
---[=[
-	@within InstanceSandboxer
-
-	Deeply unwraps all arguments passed to the function (usually
-	from inside the sandbox), making them ready to be used in a
-	method call on an `Instance`.
+	@param instance Instance -- The `Instance` to wrap.
+	@return any -- The wrapped `Instance`.
 ]=]
-function InstanceSandboxer.unwrapArgs(...: any): ...any
-	if select(1, ...) == nil then
+function InstanceSandboxer.wrapInstance(instance: Instance): any?
+	if not instance or not InstanceList.instanceAllowed(instance) then
 		return nil
 	end
-	local args = {...}
-	local visited = {}
-	for i = 1, #args do
-		args[i] = InstanceSandboxer.deepUnwrap(args[i], visited)
+
+	if WRAPPED[instance] then
+		return WRAPPED[instance]
 	end
-	return unpack(args)
+
+	local proxy = newproxy(true)
+	local mt = getmetatable(proxy)
+
+	-- sets all metamethods to *the same function* that unwraps 
+	-- self (proxy) to handle themselves correctly
+	for k, v in DEFAULT_METATABLE do
+		mt[k] = v
+	end
+
+	WRAPPED[instance] = proxy
+	UNWRAP[proxy] = instance
+
+	return proxy
+end
+
+function InstanceSandboxer.requireArguments(count: number, fn: string, types: {string}, ...): ...any
+	local n = select("#", ...)
+	if n < count then
+		error(`missing argument #{n + 1}` 
+			.. (types and types[n + 1]) and ` to '{fn}' ({types[n + 1]} expected)` or "", 
+			0
+		)
+	end
+	return ...
+end
+
+function InstanceSandboxer.requireType(item: any, ty: string, err: string?)
+	if typeof(item) ~= ty then
+		error(err or `Expected {ty}, got {typeof(item)}`, 0)
+	end
 end
 
 return InstanceSandboxer

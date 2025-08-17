@@ -43,6 +43,7 @@ local Sandboxer = {}
 
 local __METATABLE = "No."
 local InstanceSandboxer = require("@self/InstanceSandboxer")
+local InstanceList = require("@self/InstanceList")
 local InstanceMod = require("@self/Instance")
 
 local LOADSTRING_ENABLED = pcall(loadstring, "return nil")
@@ -119,7 +120,7 @@ function SafeRequire(module: (Instance | string | number)?, caller: Instance): a
 			error(`Unable to require module from given path '{module}'`, 0)
 		end
 		local new = ResolveStringPath(caller, module)
-		if not new or not InstanceSandboxer.instanceAllowed(new) then
+		if not new or not InstanceList.instanceAllowed(new) then
 			new = nil
 		end
 		module = new
