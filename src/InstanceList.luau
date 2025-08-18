@@ -128,13 +128,14 @@ function InstanceList.instanceAllowed(inst: Instance): boolean
 	return false
 end
 
-local WEAK_METATABLE = { __mode = "kv" }
-local WRAPPED: { [Instance]: any } = setmetatable({}, WEAK_METATABLE) :: any
-local UNWRAP: { [any]: Instance } = setmetatable({}, WEAK_METATABLE) :: any
+local WEAK_KEY_METATABLE = { __mode = "k" }
+local WEAK_VAL_METATABLE = { __mode = "v" }
+local WRAPPED: { [Instance]: any } = setmetatable({}, WEAK_KEY_METATABLE) :: any
+local UNWRAP: { [any]: Instance } = setmetatable({}, WEAK_VAL_METATABLE) :: any
 InstanceList.WRAPPED, InstanceList.UNWRAP = WRAPPED, UNWRAP
 
-local WRAPPED_SIGNALS: { [RBXScriptSignal]: any } = setmetatable({}, WEAK_METATABLE) :: any
-local UNWRAP_SIGNALS: { [any]: RBXScriptSignal } = setmetatable({}, WEAK_METATABLE) :: any
+local WRAPPED_SIGNALS: { [RBXScriptSignal]: any } = setmetatable({}, WEAK_KEY_METATABLE) :: any
+local UNWRAP_SIGNALS: { [any]: RBXScriptSignal } = setmetatable({}, WEAK_VAL_METATABLE) :: any
 InstanceList.WRAPPED_SIGNALS, InstanceList.UNWRAP_SIGNALS = WRAPPED_SIGNALS, UNWRAP_SIGNALS
 
 --[=[
