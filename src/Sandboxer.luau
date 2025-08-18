@@ -184,7 +184,7 @@ local ForbiddenGlobals: { [any]: boolean } = {
 	[newproxy] = true,
 	[debug] = true,
 }
-local SANDBOX_CONFIG: { [string]: boolean } = {}
+local SANDBOX_CONFIG: { [string]: any } = {}
 
 --[=[
 	@within Sandboxer
