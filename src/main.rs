@@ -24,9 +24,6 @@ fn main() {
     let sandboxer_source =
         read_to_string("./src/Sandboxer.luau").expect("Failed to read Sandboxer.luau");
 
-    let instance_source =
-        read_to_string("./src/Instance.luau").expect("Failed to read Instance.luau");
-
     let instancelist_source =
         read_to_string("./src/InstanceList.luau").expect("Failed to read InstanceList.luau");
 
@@ -38,7 +35,6 @@ fn main() {
             .with_name("Sandboxer")
             .with_property("Source", sandboxer_source)
             .with_children([
-                module_script_with_source("Instance", instance_source),
                 module_script_with_source("InstanceList", instancelist_source),
                 module_script_with_source("InstanceSandboxer", instancesandboxer_source),
                 module_script_with_source("LICENSE", license),
