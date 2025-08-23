@@ -46,7 +46,6 @@ local Sandboxer = {}
 local __METATABLE = "No."
 local InstanceSandboxer = require("@self/InstanceSandboxer")
 local InstanceList = require("@self/InstanceList")
-local InstanceMod = require("@self/Instance")
 
 local LOADSTRING_ENABLED = pcall(loadstring, "return nil")
 
@@ -383,7 +382,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		Faces = Faces,
 		FloatCurveKey = FloatCurveKey,
 		Font = Font,
-		Instance = InstanceMod,
+		Instance = Instance, -- You might be thinking: WHAT? But it's handled (read near METHOD_CACHE docs)
 		NumberRange = NumberRange,
 		NumberSequence = NumberSequence,
 		NumberSequenceKeypoint = NumberSequenceKeypoint,

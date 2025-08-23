@@ -415,4 +415,33 @@ function InstanceSandboxer.requireType(item: any, ty: string, err: string?)
 	end
 end
 
+-- This is a neat little trick to have the wrapFn function
+-- just return these instead of manually wrapping them, and
+-- having wrapFn wrap them in a closure again.
+-- Also Instance.new & Instance.fromExisting will never 
+-- be GC'd since they're C functions, so this is safe.
+METHOD_CACHE[Instance.new] = function(...: string | Instance): any
+	local class, parent = InstanceSandboxer.requireArguments(1, "new", {"string"}, ...)
+	InstanceSandboxer.requireType(class, "string", `invalid argument #1 to 'new' (string expected, got {InstanceSandboxer.typeof(class)}`)
+	if table.find(InstanceList.DisallowedClasses, class) then
+		return nil
+	end
+	local p: Instance? = nil
+	if parent then
+		p = InstanceSandboxer.unwrap(parent) :: Instance
+		InstanceSandboxer.requireType(p, "Instance", `invalid argument #2 to 'new' (Instance expected, got {InstanceSandboxer.typeof(parent)}`)
+	end
+	
+	return InstanceSandboxer.wrapInstance(Instance.new(class, p))
+end
+METHOD_CACHE[Instance.fromExisting] = function(...: Instance)
+	local wrappedInstance = InstanceSandboxer.requireArguments(1, "fromExisting", {"Instance"}, ...)	
+	local inst = InstanceSandboxer.unwrap(wrappedInstance) :: Instance
+	InstanceSandboxer.requireType(inst, "Instance", `invalid argument #1 to 'new' (Instance expected, got {InstanceSandboxer.typeof(wrappedInstance)}`)
+	if table.find(InstanceList.DisallowedClasses, inst.ClassName) then
+		return nil
+	end
+	return InstanceSandboxer.wrapInstance(Instance.fromExisting(inst))
+end
+
 return InstanceSandboxer
