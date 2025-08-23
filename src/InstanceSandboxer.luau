@@ -36,16 +36,16 @@ local WRAPPED, UNWRAP = InstanceList.WRAPPED, InstanceList.UNWRAP
 local WRAPPED_SIGNAL, UNWRAP_SIGNAL = InstanceList.WRAPPED_SIGNALS, InstanceList.UNWRAP_SIGNALS
 
 -- Thank you Luau, very cool! (WHY DOES TYPE CHECKER MAKE ME DO THIS BROOOOOOOOOOOOO)
-InstanceSandboxer.deepWrap = nil :: any
 InstanceSandboxer.deepUnwrap = nil :: any
+InstanceSandboxer.deepWrap = nil :: any
 InstanceSandboxer.isWrapped = nil :: any
 InstanceSandboxer.isWrappedSignal = nil :: any
 InstanceSandboxer.typeof = nil :: any
 InstanceSandboxer.unwrap = nil :: any
 InstanceSandboxer.unwrapArgs = nil :: any
 InstanceSandboxer.wrapArgs = nil :: any
-InstanceSandboxer.wrapFn = nil :: any
 InstanceSandboxer.wrapEvent = nil :: any
+InstanceSandboxer.wrapFn = nil :: any
 InstanceSandboxer.wrapInstance = nil :: any
 
 local MATH = {"add", "sub", "mul", "div", "idiv", "mod", "unm", "pow"}
