@@ -317,6 +317,9 @@ local SIGNAL_WRAPPER = {
 		end)
 	end
 }
+-- Support legacy names
+SIGNAL_WRAPPER.connect, SIGNAL_WRAPPER.once, SIGNAL_WRAPPER.wait, SIGNAL_WRAPPER.connectParallel = 
+	SIGNAL_WRAPPER.Connect, SIGNAL_WRAPPER.Once, SIGNAL_WRAPPER.Wait, SIGNAL_WRAPPER.ConnectParallel
 local SIGNAL_INDEX_METAMETHOD = function(self: any, k: any)
 	local fn = SIGNAL_WRAPPER[k]
 	if fn then
