@@ -446,4 +446,6 @@ METHOD_CACHE[Instance.fromExisting] = function(...: Instance)
 	return InstanceSandboxer.wrapInstance(Instance.fromExisting(inst))
 end
 
+METHOD_CACHE[typeof] = InstanceSandboxer.typeof
+
 return InstanceSandboxer
