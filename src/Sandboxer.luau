@@ -325,9 +325,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		rawset = rawset,
 		rawequal = rawequal,
 		rawlen = rawlen,
-		require = function(a: any)
-			return SafeRequire(a, CallingScript)
-		end,
+		require = _require,
 		select = select,
 		setmetatable = setmetatable,
 		tonumber = tonumber,
