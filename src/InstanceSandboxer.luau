@@ -212,10 +212,10 @@ InstanceSandboxer.typeof = InstanceSandboxer.wrapFn(typeof)
 
 local DEFAULT_METATABLE: { [string]: any } = {} do
 	local function check(a: any): Instance
-		if WRAPPED[UNWRAP[a]] ~= a then
-			error("unreachable", 0)
-		else
+		if rawequal(WRAPPED[UNWRAP[a]], a) then
 			return UNWRAP[a]
+		else
+			error("unreachable", 0)
 		end
 	end
 	DEFAULT_METATABLE.__index = function(self: any, key: any): any
