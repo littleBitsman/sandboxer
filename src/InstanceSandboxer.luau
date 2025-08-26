@@ -247,37 +247,36 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 		return tostring(check(self))
 	end
 	DEFAULT_METATABLE.__eq = function(self: any, rhs: any)
-		check(self)
-		return InstanceSandboxer.unwrap(self) == InstanceSandboxer.unwrap(rhs) and rawequal(self, rhs)
+		return InstanceSandboxer.unwrap(check(self)) == InstanceSandboxer.unwrap(rhs) and rawequal(self, rhs)
 	end
 	DEFAULT_METATABLE.__call = function(self, ...)
-		error(`attempt to call a {InstanceSandboxer.typeof(self)} value`, 0)
+		error(`attempt to call a {InstanceSandboxer.typeof(check(self))} value`, 0)
 	end
 	DEFAULT_METATABLE.__concat = function(self, v)
-		error(`attempt to concatenate {InstanceSandboxer.typeof(self)} with {InstanceSandboxer.typeof(v)}`, 0)
+		error(`attempt to concatenate {InstanceSandboxer.typeof(check(self))} with {InstanceSandboxer.typeof(v)}`, 0)
 	end
 
 	for _, math in MATH do
 		DEFAULT_METATABLE[`__{math}`] = function(self)
-			error(`attempt to perform arithmetic ({math}) on {InstanceSandboxer.typeof(self)}`, 0)
+			error(`attempt to perform arithmetic ({math}) on {InstanceSandboxer.typeof(check(self))}`, 0)
 		end
 	end
 
 	DEFAULT_METATABLE.__le = function(lhs, rhs)
-		local lhsTy = InstanceSandboxer.typeof(lhs)
-		local rhsTy = InstanceSandboxer.typeof(rhs)
+		local lhsTy = InstanceSandboxer.typeof(check(lhs))
+		local rhsTy = InstanceSandboxer.typeof(rhs) -- We cannot check rhs, it might not be wrapped
 		error(`attempt to compare {lhsTy} < {rhsTy}`, 0)
 	end
 	DEFAULT_METATABLE.__lt = function(lhs, rhs)
-		local lhsTy = InstanceSandboxer.typeof(lhs)
+		local lhsTy = InstanceSandboxer.typeof(check(lhs))
 		local rhsTy = InstanceSandboxer.typeof(rhs)
 		error(`attempt to compare {lhsTy} <= {rhsTy}`, 0)
 	end
 	DEFAULT_METATABLE.__len = function(self)
-		error(`attempt to get length of a {InstanceSandboxer.typeof(self)} value`, 0)
+		error(`attempt to get length of a {InstanceSandboxer.typeof(check(self))} value`, 0)
 	end
 	DEFAULT_METATABLE.__iter = function(self)
-		error(`attempt to iterate over a {InstanceSandboxer.typeof(self)} value`, 0)
+		error(`attempt to iterate over a {InstanceSandboxer.typeof(check(self))} value`, 0)
 	end
 
 	DEFAULT_METATABLE.__metatable = LOCKED
