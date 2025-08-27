@@ -137,6 +137,8 @@ function InstanceSandboxer.deepUnwrap(v: any, pvisited: { [any]: any }?): any
 			new[unwrappedKey] = unwrappedVal
 		end
 		return new
+	elseif typeof(v) == "function" then
+		return InstanceSandboxer.reverseWrapFn(v)
 	else
 		return v
 	end
@@ -209,6 +211,22 @@ function InstanceSandboxer.wrapFn(fn: AnyFn): AnyFn
 	return METHOD_CACHE[fn]
 end
 InstanceSandboxer.typeof = InstanceSandboxer.wrapFn(typeof)
+
+--[[
+	@within InstanceSandboxer
+
+	Wraps a function in a proxy that allows it to be safely used outside the sandbox.
+	This is mainly used for callbacks being added to stuff like BindableFunctions.
+
+	@param fn AnyFn -- The function to wrap.
+	@return AnyFn -- The wrapped function.
+]]
+function InstanceSandboxer.reverseWrapFn(fn: AnyFn): AnyFn
+	local function wrapped(...)
+		return InstanceSandboxer.unwrapArgs(fn(InstanceSandboxer.wrapArgs(...)))
+	end
+	return wrapped
+end
 
 local DEFAULT_METATABLE: { [string]: any } = {} do
 	local function check(a: any): Instance
