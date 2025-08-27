@@ -41,6 +41,7 @@ InstanceSandboxer.deepWrap = nil :: any
 InstanceSandboxer.isWrapped = nil :: any
 InstanceSandboxer.isWrappedSignal = nil :: any
 InstanceSandboxer.typeof = nil :: any
+InstanceSandboxer.reverseWrapFn = nil :: any
 InstanceSandboxer.unwrap = nil :: any
 InstanceSandboxer.unwrapArgs = nil :: any
 InstanceSandboxer.wrapArgs = nil :: any
