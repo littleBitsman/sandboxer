@@ -213,7 +213,7 @@ function InstanceSandboxer.wrapFn(fn: AnyFn): AnyFn
 end
 InstanceSandboxer.typeof = InstanceSandboxer.wrapFn(typeof)
 
---[[
+--[=[
 	@within InstanceSandboxer
 
 	Wraps a function in a proxy that allows it to be safely used outside the sandbox.
@@ -221,7 +221,7 @@ InstanceSandboxer.typeof = InstanceSandboxer.wrapFn(typeof)
 
 	@param fn AnyFn -- The function to wrap.
 	@return AnyFn -- The wrapped function.
-]]
+]=]
 function InstanceSandboxer.reverseWrapFn(fn: AnyFn): AnyFn
 	local function wrapped(...)
 		return InstanceSandboxer.unwrapArgs(fn(InstanceSandboxer.wrapArgs(...)))
