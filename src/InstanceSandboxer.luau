@@ -441,7 +441,7 @@ function InstanceSandboxer.requireArguments(count: number, fn: string, types: {s
 	local n = select("#", ...)
 	if n < count then
 		error(`missing argument #{n + 1}` 
-			.. (types and types[n + 1]) and ` to '{fn}' ({types[n + 1]} expected)` or "", 
+			.. ((types and types[n + 1]) and ` to '{fn}' ({types[n + 1]} expected)` or ""), 
 			0
 		)
 	end
@@ -450,7 +450,7 @@ end
 
 function InstanceSandboxer.requireType(item: any, ty: string, err: string?)
 	if typeof(item) ~= ty then
-		error(err or `Expected {ty}, got {typeof(item)}`, 0)
+		error(err or `Expected {ty}, got {InstanceSandboxer.typeof(item)}`, 0)
 	end
 end
 
@@ -476,7 +476,7 @@ end
 METHOD_CACHE[Instance.fromExisting] = function(...: Instance)
 	local wrappedInstance = InstanceSandboxer.requireArguments(1, "fromExisting", {"Instance"}, ...)	
 	local inst = InstanceSandboxer.unwrap(wrappedInstance) :: Instance
-	InstanceSandboxer.requireType(inst, "Instance", `invalid argument #1 to 'new' (Instance expected, got {InstanceSandboxer.typeof(wrappedInstance)}`)
+	InstanceSandboxer.requireType(inst, "Instance", `invalid argument #1 to 'fromExisting' (Instance expected, got {InstanceSandboxer.typeof(wrappedInstance)}`)
 	if table.find(InstanceList.DisallowedClasses, inst.ClassName) then
 		return nil
 	end
