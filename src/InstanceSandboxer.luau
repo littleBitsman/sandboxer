@@ -470,7 +470,7 @@ METHOD_CACHE[Instance.new] = function(...: string | Instance): any
 		p = InstanceSandboxer.unwrap(parent) :: Instance
 		InstanceSandboxer.requireType(p, "Instance", `invalid argument #2 to 'new' (Instance expected, got {InstanceSandboxer.typeof(parent)}`)
 	end
-	
+
 	return InstanceSandboxer.wrapInstance(Instance.new(class, p))
 end
 METHOD_CACHE[Instance.fromExisting] = function(...: Instance)
