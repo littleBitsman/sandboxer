@@ -18,8 +18,6 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]]
 
-debug.setmemorycategory("Sandboxer")
-
 --[=[
 	@class Sandboxer
 	
@@ -47,6 +45,7 @@ local __METATABLE = "No."
 local InstanceSandboxer = require("@self/InstanceSandboxer")
 local InstanceList = require("@self/InstanceList")
 
+-- TODO: any way to get around deoptimization because of this? (and getfenv/setfenv below?)
 local LOADSTRING_ENABLED = pcall(loadstring, "return nil")
 
 -- Thank you roblox, very cool! (deprecation warnings - WHO CARES)
@@ -183,7 +182,7 @@ local ForbiddenGlobals: { [any]: boolean } = {
 	[newproxy] = true,
 	[debug] = true,
 }
-local SANDBOX_CONFIG: { [string]: any } = {}
+local SANDBOX_CONFIG: { [string]: boolean } = {}
 
 --[=[
 	@within Sandboxer
@@ -380,7 +379,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		Faces = Faces,
 		FloatCurveKey = FloatCurveKey,
 		Font = Font,
-		Instance = Instance, -- You might be thinking: WHAT? But it's handled (read near METHOD_CACHE docs)
+		Instance = Instance, -- wrapped using a lil trick with METHOD_CACHE
 		NumberRange = NumberRange,
 		NumberSequence = NumberSequence,
 		NumberSequenceKeypoint = NumberSequenceKeypoint,
@@ -395,7 +394,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		Region3 = Region3,
 		Region3int16 = Region3int16,
 		RotationCurveKey = RotationCurveKey,
-		Secret = Secret, -- This is literally just { } what is the point
+		Secret = Secret, -- this is literally nil LOL
 		SharedTable = nil, -- TODO wat is this
 		TweenInfo = TweenInfo,
 		UDim = UDim,

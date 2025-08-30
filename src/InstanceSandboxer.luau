@@ -156,15 +156,16 @@ InstanceSandboxer.unwrap = InstanceList.unwrap
 	method call on an `Instance`.
 ]=]
 function InstanceSandboxer.unwrapArgs(...: any): ...any
-	if select(1, ...) == nil then
-		return nil
-	end
 	local args = {...}
+	local n = select("#", ...)
+	if #args ~= n then
+		args[n + 1] = 0 -- little trick to include nils that were passed
+	end
 	local visited = {}
 	for i = 1, #args do
 		args[i] = InstanceSandboxer.deepUnwrap(args[i], visited)
 	end
-	return unpack(args)
+	return unpack(args, 1, n)
 end
 
 --[=[
@@ -175,11 +176,15 @@ end
 ]=]
 function InstanceSandboxer.wrapArgs(...: any): ...any
 	local args = {...}
+	local n = select("#", ...)
+	if #args ~= n then
+		args[n + 1] = 0 -- little trick to include nils that were passed
+	end
 	local visited = {}
 	for i = 1, #args do
 		args[i] = InstanceSandboxer.deepWrap(args[i], nil, nil, visited)
 	end
-	return unpack(args)
+	return unpack(args, 1, n)
 end
 
 --[=[
@@ -229,6 +234,13 @@ function InstanceSandboxer.reverseWrapFn(fn: AnyFn): AnyFn
 	return wrapped
 end
 
+local HOOK_CACHE: { [Instance]: { [string]: AnyFn } } = setmetatable({}, { 
+	__index = function(self, k)
+		self[k] = {}
+		return self[k] -- will not stack overflow since __index is only called when the key does not exist
+	end,
+	__mode = "k" 
+}) :: any
 local DEFAULT_METATABLE: { [string]: any } = {} do
 	local function check(a: any): Instance
 		if rawequal(WRAPPED[UNWRAP[a]], a) then
@@ -246,6 +258,12 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 
 		if not success then
 			error(`{key} is not a valid member of {inst.ClassName} "{inst.Name}"`, 0)
+		end
+		if typeof(value) == "function" then
+			local hooked = HOOK_CACHE[inst][key]
+			if hooked then 
+				return hooked
+			end
 		end
 
 		return InstanceSandboxer.deepWrap(value, inst, key)
@@ -466,5 +484,35 @@ METHOD_CACHE[Instance.fromExisting] = function(...: Instance)
 end
 
 METHOD_CACHE[typeof] = InstanceSandboxer.typeof
+
+-- Avoids creating closures
+local function get(t: any, k: string)
+	return t[k]
+end
+
+--[=[
+	@within InstanceSandboxer
+
+	Hooks a function on the given instance. 
+	The hook will only work within the sandbox.
+
+	@param inst Instance -- The instance to hook the function on.
+	@param name string -- The name of the function to hook.
+	@param hook ((origFn: (A...) -> (R...), A...) -> R...) -- The hook function, or `nil` to remove the previous hook.
+]=]
+function InstanceSandboxer.hookFunction<A..., R...>(inst: Instance, name: string, hook: ((origFn: (A...) -> (R...), A...) -> R...)?)
+	local isValid, fn = pcall(get, inst, name)
+	if isValid and typeof(fn) == "function" then
+		if hook then
+			HOOK_CACHE[inst][name] = function(...)
+				return hook(fn, ...)
+			end
+		else
+			HOOK_CACHE[inst][name] = nil
+		end
+	else
+		error(`cannot hook {name} on {inst:GetFullName()} because it is invalid or is not a function`, 0)
+	end
+end
 
 return InstanceSandboxer
