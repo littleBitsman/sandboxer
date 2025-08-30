@@ -496,9 +496,9 @@ end
 	Hooks a function on the given instance. 
 	The hook will only work within the sandbox.
 
-	@param inst Instance -- The instance to hook the function on.
-	@param name string -- The name of the function to hook.
-	@param hook ((origFn: (A...) -> (R...), A...) -> R...) -- The hook function, or `nil` to remove the previous hook.
+	@param inst -- The instance to hook the function on.
+	@param name -- The name of the function to hook.
+	@param hook -- The hook function, or `nil` to remove the previous hook.
 ]=]
 function InstanceSandboxer.hookFunction<A..., R...>(inst: Instance, name: string, hook: ((origFn: (A...) -> (R...), A...) -> R...)?)
 	local isValid, fn = pcall(get, inst, name)
