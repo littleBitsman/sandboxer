@@ -82,7 +82,7 @@ function xpcallIsBad(...: any)
 	return error("xpcall is disabled, use pcall instead", 0)
 end
 
-local STRING_RESOLVER_PATTERN = "([%a.@]+)/?"
+local STRING_RESOLVER_PATTERN = "([^/]+)/?"
 function ResolveStringPath(mod: Instance, str: string): Instance?
 	local i = 0
 	local currentInstance: Instance?
@@ -181,6 +181,8 @@ local ForbiddenGlobals: { [any]: boolean } = {
 	[loadstring] = true,
 	[newproxy] = true,
 	[debug] = true,
+	[debug.info] = true,
+	[debug.traceback] = true
 }
 local SANDBOX_CONFIG: { [string]: boolean } = {}
 
@@ -201,7 +203,7 @@ local SANDBOX_CONFIG: { [string]: boolean } = {}
 	- `setfenv`
 	- `loadstring`
 	- `newproxy`
-	- `debug` (library)
+	- `debug` (library), `debug.info`, & `debug.traceback`
 
 	Attempting to add these functions/libraries will result in them being ignored.
 	However, you can set them to other values, such as a custom function.
@@ -218,6 +220,9 @@ local SANDBOX_CONFIG: { [string]: boolean } = {}
 	The function will return `true` if the operation was completely successful
 	(i.e., all values were set on the configuration table) and `false` if any 
 	of the keys or values were forbidden globals.
+
+	**The table is NOT recursively checked for forbidden globals. If you manage
+	to bypass the checks, you are responsible for any consequences.**
 
 	@param config -- A table containing the configuration for the sandbox.
 
@@ -258,10 +263,12 @@ function Sandboxer:Init()
 		return
 	end
 
-	local _source, _line, _name, _parameters, _isVariadic, theFunction = debug.info(LEVEL, "slnaf")
+	local theFunction = debug.info(LEVEL, "f")
 
 	Sandboxer:Sandbox(theFunction)
 end
+
+local IS_SANDBOXED_REF = newproxy()
 
 --[=[
 	@within Sandboxer
@@ -272,18 +279,21 @@ end
 	@error "level must be at least 1" -- If fnOrLevel is a number, it must be at least 1.
 ]=]
 function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
+	local fn
 	if typeof(fnOrLevel) == "number" then
 		assert(fnOrLevel >= 1, "level must be at least 1")
 		fnOrLevel += 1 -- add depth for this function
+		fn = debug.info(fnOrLevel, "f")
 	else
 		InstanceSandboxer.requireType(fnOrLevel, "function", `expected function or level number, got {typeof(fnOrLevel)}`)
+		fn = fnOrLevel
 	end
 
-	local IsValid, CallingFenv = pcall(getfenv, if typeof(fnOrLevel) == "number" then fnOrLevel + 1 else fnOrLevel)
+	local IsValid, CallingFenv = pcall(getfenv, fn)
 	if not IsValid then
 		error("invalid level or function", 0)
 	end
-	if CallingFenv.game == GAME_SANDBOXED then
+	if getmetatable(CallingFenv :: any) == IS_SANDBOXED_REF then
 		return
 	end
 	local CallingScript = CallingFenv.script
@@ -296,7 +306,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 	local self_G = {}
 
 	-- Big boi
-	local fenv = InstanceSandboxer.deepWrap({
+	local fenv = {
 		_G = self_G,
 		shared = self_G,
 
@@ -403,7 +413,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		Vector2int16 = Vector2int16,
 		Vector3 = Vector3,
 		Vector3int16 = Vector3int16
-	})
+	}
 
 	for key, value in SANDBOX_CONFIG do
 		if value == false then
@@ -413,12 +423,12 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		end
 	end
 
-	setmetatable(fenv, {
-		__metatable = __METATABLE
+	fenv = setmetatable(InstanceSandboxer.deepWrap(fenv), {
+		__metatable = IS_SANDBOXED_REF
 	})
 
 	-- The end yay
-	setfenv(fnOrLevel, fenv)
+	setfenv(fn, fenv)
 end
 
 --[=[

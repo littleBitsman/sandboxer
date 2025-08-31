@@ -200,19 +200,11 @@ function InstanceSandboxer.wrapFn(fn: AnyFn): AnyFn
 	if METHOD_CACHE[fn] then
 		return METHOD_CACHE[fn]
 	end
-	-- Wow guys look its debug.info
-	local parameters: number, isVariadic: boolean = debug.info(fn, "a")
-	if parameters == 0 and not isVariadic then
-		local function wrapped()
-			return InstanceSandboxer.wrapArgs(fn())
-		end
-		METHOD_CACHE[fn] = wrapped
-	else
-		local function wrapped(...)
-			return InstanceSandboxer.wrapArgs(fn(InstanceSandboxer.unwrapArgs(...)))
-		end
-		METHOD_CACHE[fn] = wrapped
+
+	local function wrapped(...)
+		return InstanceSandboxer.wrapArgs(fn(InstanceSandboxer.unwrapArgs(...)))
 	end
+	METHOD_CACHE[fn] = wrapped
 
 	return METHOD_CACHE[fn]
 end
@@ -284,7 +276,7 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 		return tostring(check(self))
 	end
 	DEFAULT_METATABLE.__eq = function(self: any, rhs: any)
-		return InstanceSandboxer.unwrap(check(self)) == InstanceSandboxer.unwrap(rhs) and rawequal(self, rhs)
+		return check(self) == InstanceSandboxer.unwrap(rhs) and rawequal(self, rhs)
 	end
 	DEFAULT_METATABLE.__call = function(self, ...)
 		error(`attempt to call a {InstanceSandboxer.typeof(check(self))} value`, 0)
@@ -299,12 +291,12 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 		end
 	end
 
-	DEFAULT_METATABLE.__le = function(lhs, rhs)
+	DEFAULT_METATABLE.__lt = function(lhs, rhs)
 		local lhsTy = InstanceSandboxer.typeof(check(lhs))
 		local rhsTy = InstanceSandboxer.typeof(rhs) -- We cannot check rhs, it might not be wrapped
 		error(`attempt to compare {lhsTy} < {rhsTy}`, 0)
 	end
-	DEFAULT_METATABLE.__lt = function(lhs, rhs)
+	DEFAULT_METATABLE.__le = function(lhs, rhs)
 		local lhsTy = InstanceSandboxer.typeof(check(lhs))
 		local rhsTy = InstanceSandboxer.typeof(rhs)
 		error(`attempt to compare {lhsTy} <= {rhsTy}`, 0)
@@ -495,6 +487,61 @@ end
 
 	Hooks a function on the given instance. 
 	The hook will only work within the sandbox.
+
+	# Info
+	This API is intended to be called from *outside* the sandbox (trusted code).
+	It lets you interpose logic before / after an instance method call that
+	originates from sandboxed code.
+
+	The provided `hook` is invoked with the following parameters:
+	```lua
+	hook(origFn, ...)
+	```
+	- `origFn` (function): The original unwrapped Roblox function belonging to `inst`.
+	  It must be called with the raw instance as its first parameter if you invoke it manually:
+	  `origFn(inst, ...)`.
+	- `...`: The raw arguments exactly as they were supplied by the sandboxed caller *after* Luau's
+	  implicit `:` desugaring (i.e. the first vararg is the wrapped proxy for `inst`). Remember that
+	  sandboxed code can still do something like `Instance1.Destroy(Instance2)`.
+
+	Important: The hook receives the *wrapped* proxy as its first variadic argument, not the raw `Instance`.
+	Because `origFn` expects the raw instance as the first parameter, do **not** forward the wrapped
+	proxy directly. Instead, use the captured `inst` you supplied to `hookFunction`:
+	```lua
+	InstanceSandboxer.hookFunction(part, "Destroy", function(orig, selfProxy)
+		print("Intercepted Destroy for", part:GetFullName())
+		-- custom logic
+		orig(part) -- call underlying method safely
+	end)
+	```
+
+	# Return Values
+	Whatever the hook returns is forwarded (after normal sandbox wrapping) to the sandboxed caller.
+	If you want to preserve original behavior, return the results of `origFn`:
+	```lua
+	return origFn(inst, ...)
+	```
+
+	# Removing a Hook
+	Pass `nil` as the `hook` argument to remove a previously installed hook:
+	```lua
+	InstanceSandboxer.hookFunction(part, "Destroy", nil)
+	```
+
+	# Error Handling
+	If the named member does not exist or is not a function, this call errors.
+	Hooks replace one another; only one hook per (Instance, methodName) pair is stored.
+
+	# Limitations / Security Notes
+	- Hooks are not visible to sandbox code except through changed behavior. However,
+	  if sandboxed code checks another Instance of the same class' methods, it may observe
+	  that the functions are not equal and thus one has been hooked.
+	- Hooks execute with full trust; ensure any values you return are properly wrapped
+	  if you manually bypass `origFn`.
+	- Because arguments arrive in wrapped form (first arg is a proxy), prefer using
+	  the outer `inst` variable when invoking `origFn`.
+	- Re-entrant calls to the same method from inside a hook will also trigger the hook.
+	  Make sure to use the `origFn` provided.
 
 	@param inst -- The instance to hook the function on.
 	@param name -- The name of the function to hook.
