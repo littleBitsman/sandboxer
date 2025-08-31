@@ -51,7 +51,7 @@ InstanceSandboxer.wrapInstance = nil :: any
 
 local MATH = {"add", "sub", "mul", "div", "idiv", "mod", "unm", "pow"}
 local LOCKED = "The metatable is locked"
-local INDEX_FAIL = function(self, k: string, ...): never
+local INDEX_FAIL = function(self, k: string): never
 	error(`{k} is not a valid member of {InstanceSandboxer.typeof(self)}`, 3)
 end
 
@@ -270,7 +270,7 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 		if not success then
 			local err = rawerr or "" 
 			if err:find("not a valid member") then
-				INDEX_FAIL(self, key)
+				error(`{key} is not a valid member of {inst.ClassName} "{inst.Name}"`, 2)
 			elseif err:find("Unable to assign property") then
 				error(err, 2) -- lazy lol
 			else -- No other errors while setting properties can occur
