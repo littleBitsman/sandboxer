@@ -78,8 +78,8 @@ function nope(): never
 	error("nuh uh", 0)
 end
 
-function xpcallIsBad(...: any)
-	return error("xpcall is disabled, use pcall instead", 0)
+function xpcallIsBad(...: any): never
+	error("xpcall is disabled, use pcall instead", 2)
 end
 
 local STRING_RESOLVER_PATTERN = "([^/]+)/?"
@@ -114,10 +114,11 @@ function ResolveStringPath(mod: Instance, str: string): Instance?
 end
 
 local realrequire = require
+-- The real caller is level 3 (1 = SafeRequire, 2 = _require, 3 = caller of _require)
 function SafeRequire(module: (Instance | string | number)?, caller: Instance): any
 	if typeof(module) == "string" then
 		if not caller then
-			error(`Unable to require module from given path '{module}'`, 0)
+			error(`Unable to require module from given path '{module}'`, 3)
 		end
 		local new = ResolveStringPath(caller, module)
 		if not new or not InstanceList.instanceAllowed(new) then
@@ -127,7 +128,7 @@ function SafeRequire(module: (Instance | string | number)?, caller: Instance): a
 	end
 	if typeof(module) ~= "Instance" then
 		-- Steal it from roblox hehe
-		error("Attempted to call require with invalid argument(s).", 0)
+		error("Attempted to call require with invalid argument(s).", 3)
 	end
 	return realrequire(module)
 end
@@ -291,7 +292,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 
 	local IsValid, CallingFenv = pcall(getfenv, fn)
 	if not IsValid then
-		error("invalid level or function", 0)
+		error("invalid level or function", 2)
 	end
 	if getmetatable(CallingFenv :: any) == IS_SANDBOXED_REF then
 		return
@@ -449,17 +450,17 @@ function Sandboxer:SandboxString(src: string, chunkname: string): InstanceSandbo
 
 		if not success then
 			-- fn is the error
-			error(fn, 0)
+			error(fn, 2)
 		elseif not fn then
 			-- luaError will exist if fn is nil
-			error(luaError, 0)
+			error(luaError, 2)
 		end
 
 		Sandboxer:Sandbox(fn)
 
 		return fn
 	else
-		error("loadstring() is not available", 0)
+		error("loadstring() is not available", 2)
 	end
 end
 

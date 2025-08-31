@@ -52,7 +52,7 @@ InstanceSandboxer.wrapInstance = nil :: any
 local MATH = {"add", "sub", "mul", "div", "idiv", "mod", "unm", "pow"}
 local LOCKED = "The metatable is locked"
 local INDEX_FAIL = function(self, k: string, ...): never
-	error(`{k} is not a valid member of {InstanceSandboxer.typeof(self)}`, 0)
+	error(`{k} is not a valid member of {InstanceSandboxer.typeof(self)}`, 3)
 end
 
 --[=[
@@ -238,7 +238,7 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 		if rawequal(WRAPPED[UNWRAP[a]], a) then
 			return UNWRAP[a]
 		else
-			error("unreachable", 0)
+			error("unreachable", 3)
 		end
 	end
 	DEFAULT_METATABLE.__index = function(self: any, key: any): any
@@ -249,7 +249,7 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 		end)
 
 		if not success then
-			error(`{key} is not a valid member of {inst.ClassName} "{inst.Name}"`, 0)
+			error(`{key} is not a valid member of {inst.ClassName} "{inst.Name}"`, 2)
 		end
 		if typeof(value) == "function" then
 			local hooked = HOOK_CACHE[inst][key]
@@ -272,9 +272,9 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 			if err:find("not a valid member") then
 				INDEX_FAIL(self, key)
 			elseif err:find("Unable to assign property") then
-				error(err, 0) -- lazy lol
+				error(err, 2) -- lazy lol
 			else -- No other errors while setting properties can occur
-				error("unreachable", 0) 
+				error("unreachable", 2) 
 			end
 		end
 	end
@@ -286,33 +286,36 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 		return check(self) == InstanceSandboxer.unwrap(rhs) and rawequal(self, rhs)
 	end
 	DEFAULT_METATABLE.__call = function(self, ...)
-		error(`attempt to call a {InstanceSandboxer.typeof(check(self))} value`, 0)
+		error(`attempt to call a {InstanceSandboxer.typeof(check(self))} value`, 2)
 	end
 	DEFAULT_METATABLE.__concat = function(self, v)
-		error(`attempt to concatenate {InstanceSandboxer.typeof(check(self))} with {InstanceSandboxer.typeof(v)}`, 0)
+		error(`attempt to concatenate {InstanceSandboxer.typeof(check(self))} with {InstanceSandboxer.typeof(v)}`, 2)
 	end
 
 	for _, math in MATH do
-		DEFAULT_METATABLE[`__{math}`] = function(self)
-			error(`attempt to perform arithmetic ({math}) on {InstanceSandboxer.typeof(check(self))}`, 0)
+		DEFAULT_METATABLE[`__{math}`] = function(self, rhs)
+			error(`attempt to perform arithmetic ({math}) on {InstanceSandboxer.typeof(check(self))}` 
+				.. (InstanceSandboxer.typeof(rhs) ~= "Instance" and ` and {InstanceSandboxer.typeof(rhs)}` or ""), 
+				2
+			)
 		end
 	end
 
 	DEFAULT_METATABLE.__lt = function(lhs, rhs)
 		local lhsTy = InstanceSandboxer.typeof(check(lhs))
 		local rhsTy = InstanceSandboxer.typeof(rhs) -- We cannot check rhs, it might not be wrapped
-		error(`attempt to compare {lhsTy} < {rhsTy}`, 0)
+		error(`attempt to compare {lhsTy} < {rhsTy}`, 2)
 	end
 	DEFAULT_METATABLE.__le = function(lhs, rhs)
 		local lhsTy = InstanceSandboxer.typeof(check(lhs))
 		local rhsTy = InstanceSandboxer.typeof(rhs)
-		error(`attempt to compare {lhsTy} <= {rhsTy}`, 0)
+		error(`attempt to compare {lhsTy} <= {rhsTy}`, 2)
 	end
 	DEFAULT_METATABLE.__len = function(self)
-		error(`attempt to get length of a {InstanceSandboxer.typeof(check(self))} value`, 0)
+		error(`attempt to get length of a {InstanceSandboxer.typeof(check(self))} value`, 2)
 	end
 	DEFAULT_METATABLE.__iter = function(self)
-		error(`attempt to iterate over a {InstanceSandboxer.typeof(check(self))} value`, 0)
+		error(`attempt to iterate over a {InstanceSandboxer.typeof(check(self))} value`, 2)
 	end
 
 	DEFAULT_METATABLE.__metatable = LOCKED
@@ -449,7 +452,7 @@ end
 
 function InstanceSandboxer.requireType(item: any, ty: string, err: string?)
 	if typeof(item) ~= ty then
-		error(err or `Expected {ty}, got {InstanceSandboxer.typeof(item)}`, 0)
+		error(err or `Expected {ty}, got {InstanceSandboxer.typeof(item)}`, 3)
 	end
 end
 
@@ -565,7 +568,7 @@ function InstanceSandboxer.hookFunction<A..., R...>(inst: Instance, name: string
 			HOOK_CACHE[inst][name] = nil
 		end
 	else
-		error(`cannot hook {name} on {inst:GetFullName()} because it is invalid or is not a function`, 0)
+		error(`cannot hook {name} on {inst:GetFullName()} because it is invalid or is not a function`, 2)
 	end
 end
 
