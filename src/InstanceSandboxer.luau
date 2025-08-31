@@ -264,11 +264,18 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 		local inst = check(self)
 		key = InstanceSandboxer.deepUnwrap(key)
 		value = InstanceSandboxer.deepUnwrap(value)
-		local s = pcall(function()
+		local success, rawerr: string? = pcall(function()
 			(inst :: any)[key] = value
 		end)
-		if not s then
-			INDEX_FAIL(self, key)
+		if not success then
+			local err = rawerr or "" 
+			if err:find("not a valid member") then
+				INDEX_FAIL(self, key)
+			elseif err:find("Unable to assign property") then
+				error(err, 0) -- lazy lol
+			else -- No other errors while setting properties can occur
+				error("unreachable", 0) 
+			end
 		end
 	end
 
