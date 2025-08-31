@@ -275,7 +275,13 @@ local IS_SANDBOXED_REF = newproxy()
 	@within Sandboxer
 
 	Sandboxes the given function or the calling script at the specified level.
-	
+
+	| Level | Definition |
+	|-------|------------|
+	| 1     | function calling `Sandboxer:Sandbox` |
+	| 2     | caller of the above function |
+	| 3...  | etc. |
+
 	@param fnOrLevel -- The function to sandbox or the level to sandbox at.
 	@error "level must be at least 1" -- If fnOrLevel is a number, it must be at least 1.
 ]=]

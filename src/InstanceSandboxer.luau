@@ -31,6 +31,8 @@ debug.setmemorycategory("Sandboxer")
 ]=]
 local InstanceSandboxer = {}
 
+local TRIM_WHITESPACE_PAT = "^%s*(.-)%s*$"
+
 local InstanceList = require("./InstanceList")
 local WRAPPED, UNWRAP = InstanceList.WRAPPED, InstanceList.UNWRAP
 local WRAPPED_SIGNAL, UNWRAP_SIGNAL = InstanceList.WRAPPED_SIGNALS, InstanceList.UNWRAP_SIGNALS
@@ -394,7 +396,7 @@ function InstanceSandboxer.wrapEvent(signal: RBXScriptSignal, name: string): any
 	metatable.__index = SIGNAL_INDEX_METAMETHOD
 	metatable.__newindex = INDEX_FAIL
 
-	local STRING = `Signal {name}`
+	local STRING = string.match(`Signal {name}`, TRIM_WHITESPACE_PAT)
 	metatable.__tostring = function()
 		return STRING
 	end
@@ -444,7 +446,7 @@ function InstanceSandboxer.requireArguments(count: number, fn: string, types: {s
 	if n < count then
 		error(`missing argument #{n + 1}` 
 			.. ((types and types[n + 1]) and ` to '{fn}' ({types[n + 1]} expected)` or ""), 
-			0
+			3
 		)
 	end
 	return ...
