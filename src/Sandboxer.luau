@@ -185,7 +185,7 @@ local ForbiddenGlobals: { [any]: boolean } = {
 	[debug.info] = true,
 	[debug.traceback] = true
 }
-local SANDBOX_CONFIG: { [string]: boolean } = {}
+local SANDBOX_CONFIG: { [string]: any } = {}
 
 --[=[
 	@within Sandboxer
@@ -244,10 +244,9 @@ end
 --[=[
 	@within Sandboxer
 
-	Initailizes the sandbox environment for the calling script.
+	Initializes the sandbox environment for the calling script.
 
 	The following globals are **removed**:
-	- `_G` / `shared`
 	- `SharedTable`
 	- `debug` library
 	- `getfenv`
@@ -257,6 +256,8 @@ end
 	- `xpcall` (*note: use `pcall` instead*)
 
 	All other globals are set to sandboxed versions of the originals.
+
+	A separate table is created for `_G` / `shared`
 ]=]
 function Sandboxer:Init()	
 	local CallingFenv, LEVEL = GetHighestEnv()
