@@ -500,6 +500,8 @@ end
 	Hooks a function on the given instance. 
 	The hook will only work within the sandbox.
 
+	**If used incorrectly, this can be unsafe. Read below, and use with caution.**
+
 	# Info
 	This API is intended to be called from *outside* the sandbox (trusted code).
 	It lets you interpose logic before / after an instance method call that
@@ -513,11 +515,11 @@ end
 	  It must be called with the raw instance as its first parameter if you invoke it manually:
 	  `origFn(inst, ...)`.
 	- `...`: The raw arguments exactly as they were supplied by the sandboxed caller *after* Luau's
-	  implicit `:` desugaring (i.e. the first vararg is the wrapped proxy for `inst`). Remember that
-	  sandboxed code can still do something like `Instance1.Destroy(Instance2)`.
+	  implicit `:` desugaring (i.e. the first vararg is the wrapped proxy for `inst`). *Remember that
+	  sandboxed code can still do something like `Instance1.Destroy(Instance2)`.*
 
 	Important: The hook receives the *wrapped* proxy as its first variadic argument, not the raw `Instance`.
-	Because `origFn` expects the raw instance as the first parameter, do **not** forward the wrapped
+	Because `origFn` expects the actual `Instance` as the first parameter, do **not** forward the wrapped
 	proxy directly. Instead, use the captured `inst` you supplied to `hookFunction`:
 	```lua
 	InstanceSandboxer.hookFunction(part, "Destroy", function(orig, selfProxy)
@@ -540,26 +542,26 @@ end
 	InstanceSandboxer.hookFunction(part, "Destroy", nil)
 	```
 
-	# Error Handling
+	# Errors
 	If the named member does not exist or is not a function, this call errors.
-	Hooks replace one another; only one hook per (Instance, methodName) pair is stored.
+	Hooks replace one another: only one hook per (`Instance`, `methodName`) pair is stored.
 
 	# Limitations / Security Notes
-	- Hooks are not visible to sandbox code except through changed behavior. However,
+	- Hooks are not visible to sandboxed code except through changed behavior. However,
 	  if sandboxed code checks another Instance of the same class' methods, it may observe
 	  that the functions are not equal and thus one has been hooked.
 	- Hooks execute with full trust; ensure any values you return are properly wrapped
 	  if you manually bypass `origFn`.
 	- Because arguments arrive in wrapped form (first arg is a proxy), prefer using
 	  the outer `inst` variable when invoking `origFn`.
-	- Re-entrant calls to the same method from inside a hook will also trigger the hook.
-	  Make sure to use the `origFn` provided.
+	- Re-entrant calls to the same method on the proxy from inside a hook will also 
+	  trigger the hook. Make sure to use the `origFn` provided.
 
 	@param inst -- The instance to hook the function on.
 	@param name -- The name of the function to hook.
 	@param hook -- The hook function, or `nil` to remove the previous hook.
 ]=]
-function InstanceSandboxer.hookFunction<A..., R...>(inst: Instance, name: string, hook: ((origFn: (A...) -> (R...), A...) -> R...)?)
+function InstanceSandboxer.hookFunction<A..., R...>(inst: Instance, name: string, hook: ((origFn: (A...) -> (R...), A...) -> R...?)?)
 	local isValid, fn = pcall(get, inst, name)
 	if isValid and typeof(fn) == "function" then
 		if hook then
