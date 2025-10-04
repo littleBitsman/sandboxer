@@ -40,6 +40,7 @@ local WRAPPED_SIGNALS, UNWRAP_SIGNALS = InstanceList.WRAPPED_SIGNALS, InstanceLi
 -- Thank you Luau, very cool! (WHY DOES TYPE CHECKER MAKE ME DO THIS BROOOOOOOOOOOOO)
 InstanceSandboxer.deepUnwrap = nil :: any
 InstanceSandboxer.deepWrap = nil :: any
+InstanceSandboxer.hookFunction = nil :: any
 InstanceSandboxer.isWrapped = nil :: any
 InstanceSandboxer.isWrappedSignal = nil :: any
 InstanceSandboxer.typeof = nil :: any
@@ -499,6 +500,10 @@ end
 
 	Hooks a function on the given instance. 
 	The hook will only work within the sandbox.
+
+	If you want to hook all calls to a method on all Instances of a class,
+	use `METHOD_CACHE` instead. Read the Sandboxer source at the bottom
+	where HttpService is hooked for an example.
 
 	**If used incorrectly, this can be unsafe. Read below, and use with caution.**
 
