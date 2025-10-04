@@ -521,7 +521,7 @@ end
 	  `origFn(inst, ...)`.
 	- `...`: The raw arguments exactly as they were supplied by the sandboxed caller *after* Luau's
 	  implicit `:` desugaring (i.e. the first vararg is the wrapped proxy for `inst`). *Remember that
-	  sandboxed code can still do something like `Instance1.Destroy(Instance2)`.*
+	  sandboxed code can still do something like* `Instance1.Destroy(Instance2)`.
 
 	Important: The hook receives the *wrapped* proxy as its first variadic argument, not the raw `Instance`.
 	Because `origFn` expects the actual `Instance` as the first parameter, do **not** forward the wrapped
