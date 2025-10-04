@@ -472,7 +472,25 @@ function Sandboxer:SandboxString(src: string, chunkname: string): InstanceSandbo
 end
 
 Sandboxer.typeof = InstanceSandboxer.typeof
-Sandboxer.InstanceList = require("@self/InstanceList")
+Sandboxer.InstanceList = InstanceList
+
+-- allow HttpService methods like GenerateGUID and JSON functions, but disallow network with hooks
+do
+	local HttpService = game:GetService("HttpService")
+	InstanceList.Allow[HttpService] = false -- can still be disabled by ExplicitDisallow
+	InstanceSandboxer.hookFunction(HttpService, "GetAsync", function(_origFn, ...)
+		error("GetAsync is disabled", 2)
+	end)
+	InstanceSandboxer.hookFunction(HttpService, "PostAsync", function(_origFn, ...)
+		error("PostAsync is disabled", 2)
+	end)
+	InstanceSandboxer.hookFunction(HttpService, "RequestAsync", function(_origFn, ...)
+		error("RequestAsync is disabled", 2)
+	end)
+	InstanceSandboxer.hookFunction(HttpService, "GetSecret", function(_origFn, ...)
+		error("GetSecret is disabled", 2)
+	end)
+end
 
 return setmetatable(Sandboxer, {
 	__index = nope,

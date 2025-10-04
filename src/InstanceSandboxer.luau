@@ -35,7 +35,7 @@ local TRIM_WHITESPACE_PAT = "^%s*(.-)%s*$"
 
 local InstanceList = require("./InstanceList")
 local WRAPPED, UNWRAP = InstanceList.WRAPPED, InstanceList.UNWRAP
-local WRAPPED_SIGNAL, UNWRAP_SIGNAL = InstanceList.WRAPPED_SIGNALS, InstanceList.UNWRAP_SIGNALS
+local WRAPPED_SIGNALS, UNWRAP_SIGNALS = InstanceList.WRAPPED_SIGNALS, InstanceList.UNWRAP_SIGNALS
 
 -- Thank you Luau, very cool! (WHY DOES TYPE CHECKER MAKE ME DO THIS BROOOOOOOOOOOOO)
 InstanceSandboxer.deepUnwrap = nil :: any
@@ -203,10 +203,9 @@ function InstanceSandboxer.wrapFn(fn: AnyFn): AnyFn
 		return METHOD_CACHE[fn]
 	end
 
-	local function wrapped(...)
+	METHOD_CACHE[fn] = function(...)
 		return InstanceSandboxer.wrapArgs(fn(InstanceSandboxer.unwrapArgs(...)))
 	end
-	METHOD_CACHE[fn] = wrapped
 
 	return METHOD_CACHE[fn]
 end
@@ -222,10 +221,9 @@ InstanceSandboxer.typeof = InstanceSandboxer.wrapFn(typeof)
 	@return AnyFn -- The wrapped function.
 ]=]
 function InstanceSandboxer.reverseWrapFn(fn: AnyFn): AnyFn
-	local function wrapped(...)
+	return function(...)
 		return InstanceSandboxer.unwrapArgs(fn(InstanceSandboxer.wrapArgs(...)))
 	end
-	return wrapped
 end
 
 local HOOK_CACHE: { [Instance]: { [string]: AnyFn } } = setmetatable({}, { 
@@ -236,15 +234,17 @@ local HOOK_CACHE: { [Instance]: { [string]: AnyFn } } = setmetatable({}, {
 	__mode = "k" 
 }) :: any
 local DEFAULT_METATABLE: { [string]: any } = {} do
-	local function check(a: any): Instance
+	local function check(a: any, requireInstance: boolean?): any
 		if rawequal(WRAPPED[UNWRAP[a]], a) then
 			return UNWRAP[a]
+		elseif not requireInstance and rawequal(WRAPPED_SIGNALS[UNWRAP_SIGNALS[a]], a) then
+			return UNWRAP_SIGNALS[a]
 		else
-			error("unreachable", 3)
+			error("unreachable", 0)
 		end
 	end
 	DEFAULT_METATABLE.__index = function(self: any, key: any): any
-		local inst = check(self)
+		local inst: Instance = check(self, true)
 		key = InstanceSandboxer.deepUnwrap(key)
 		local success, value = pcall(function()
 			return (inst :: any)[key]
@@ -263,7 +263,7 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 		return InstanceSandboxer.deepWrap(value, inst, key)
 	end
 	DEFAULT_METATABLE.__newindex = function(self: any, key: any, value: any)
-		local inst = check(self)
+		local inst: Instance = check(self, true)
 		key = InstanceSandboxer.deepUnwrap(key)
 		value = InstanceSandboxer.deepUnwrap(value)
 		local success, rawerr: string? = pcall(function()
@@ -282,7 +282,7 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 	end
 
 	DEFAULT_METATABLE.__tostring = function(self: any)
-		return tostring(check(self))
+		return tostring(check(self, true))
 	end
 	DEFAULT_METATABLE.__eq = function(self: any, rhs: any)
 		return check(self) == InstanceSandboxer.unwrap(rhs) and rawequal(self, rhs)
@@ -381,8 +381,8 @@ end
 	@return any -- The wrapped `RBXScriptSignal`.
 ]=]
 function InstanceSandboxer.wrapEvent(signal: RBXScriptSignal, name: string): any
-	if WRAPPED_SIGNAL[signal] then
-		return WRAPPED_SIGNAL[signal]
+	if WRAPPED_SIGNALS[signal] then
+		return WRAPPED_SIGNALS[signal]
 	end
 	local proxy = newproxy(true)
 	local metatable = getmetatable(proxy)
@@ -401,8 +401,8 @@ function InstanceSandboxer.wrapEvent(signal: RBXScriptSignal, name: string): any
 		return STRING
 	end
 
-	WRAPPED_SIGNAL[signal] = proxy
-	UNWRAP_SIGNAL[proxy] = signal
+	WRAPPED_SIGNALS[signal] = proxy
+	UNWRAP_SIGNALS[proxy] = signal
 
 	return proxy
 end
@@ -575,5 +575,7 @@ function InstanceSandboxer.hookFunction<A..., R...>(inst: Instance, name: string
 		error(`cannot hook {name} on {inst:GetFullName()} because it is invalid or is not a function`, 2)
 	end
 end
+
+InstanceSandboxer.METHOD_CACHE = METHOD_CACHE
 
 return InstanceSandboxer

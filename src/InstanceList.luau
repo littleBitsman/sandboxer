@@ -32,9 +32,9 @@ local InstanceList = {}
 
 local DisallowedClasses: {string} = {}
 --[=[
+	@within InstanceList
 	@prop DisallowedClasses {string}
 	@readonly
-	@within InstanceList
 	
 	A list of classes that are not allowed to be created by
 	`Instance.new` nor `Instance.fromExisting`.
@@ -48,14 +48,35 @@ local DisallowedClasses: {string} = {}
 ]=]
 InstanceList.DisallowedClasses = DisallowedClasses
 
+local ForbiddenClasses: {string} = {}
+--[=[
+	@within InstanceList
+	@prop ForbiddenClasses {string}
+	@readonly
+	
+	A list of classes that are not allowed to be accessed
+	via the sandbox, period. Every time an `Instance` reference
+	is accessed, its class will be checked against this list using
+	`IsA`. If it matches any of the classes in this list, `nil` will
+	be returned instead.
+	
+	Items can be added to the list, but it cannot be overwritten.
+	
+	Changes to this list will be reflected in the sandbox, even if
+	they are made after the sandbox has been initialized. However,
+	if an `Instance` of a forbidden class is already referenced in
+	a variable it will continue to function as normal.
+]=]
+InstanceList.ForbiddenClasses = ForbiddenClasses
+
 -- [Instance]: AllowDescendants (if true, only the specific Instance is blacklisted)
 local ExplicitDisallow: { [Instance]: boolean } = {
 	[game:GetService("Players")] = true
 }
 --[=[
+	@within InstanceList
 	@prop ExplicitDisallow { [Instance]: boolean }
 	@readonly
-	@within InstanceList
 	
 	A list of `Instance`s that are explicitly disallowed in the sandbox.
 	This is a mapping of `Instance`s to boolean values, which indicate whether
@@ -84,9 +105,9 @@ local Allow: { [Instance]: boolean } = {
 	[game:GetService("Debris")] = true,
 }
 --[=[
+	@within InstanceList
 	@prop Allow { [Instance]: boolean }
 	@readonly
-	@within InstanceList
 	
 	A list of `Instance`s that are allowed in the sandbox.
 	This is a mapping of `Instance`s to boolean values, which indicate whether
@@ -108,16 +129,22 @@ InstanceList.Allow = Allow
 	@within InstanceList
 	
 	Checks if an `Instance` is allowed in the sandbox based on
-	`Allow` and `ExplicitDisallow`.
+	`Allow`, `ExplicitDisallow`, and `ForbiddenClasses`.
 	
 	@param inst -- The `Instance` to check.
 ]=]
 function InstanceList.instanceAllowed(inst: Instance): boolean
+	for _, class in ForbiddenClasses do
+		if inst:IsA(class) then
+			return false
+		end
+	end
+
 	for a, allowDescs in ExplicitDisallow do
 		if inst == a then
 			return false
-		elseif inst:IsDescendantOf(a) then
-			return allowDescs
+		elseif allowDescs and inst:IsDescendantOf(a) then
+			return true
 		end
 	end
 	for a, allowDescs in Allow do
