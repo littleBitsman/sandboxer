@@ -133,6 +133,9 @@ function Expect.new(value: any)
 	end
 	
 	function self.toEqual(expected: any)
+		-- Note: This performs shallow equality checking for tables.
+		-- For deep equality of nested tables, values are compared with ==.
+		-- If you need deep structural comparison, consider using custom comparison logic.
 		if typeof(value) == "table" and typeof(expected) == "table" then
 			for k, v in expected do
 				if value[k] ~= v then

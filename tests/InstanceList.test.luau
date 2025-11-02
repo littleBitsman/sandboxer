@@ -77,6 +77,7 @@ describe("InstanceList - ForbiddenClasses", function()
 	it("should reject instances of forbidden classes", function()
 		-- Add a test forbidden class
 		table.insert(InstanceList.ForbiddenClasses, "Fire")
+		local forbiddenIndex = #InstanceList.ForbiddenClasses
 		
 		local part = Instance.new("Part")
 		part.Parent = workspace
@@ -87,7 +88,7 @@ describe("InstanceList - ForbiddenClasses", function()
 		
 		-- Cleanup
 		part:Destroy()
-		table.remove(InstanceList.ForbiddenClasses)
+		table.remove(InstanceList.ForbiddenClasses, forbiddenIndex)
 	end)
 end)
 

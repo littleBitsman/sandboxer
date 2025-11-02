@@ -64,6 +64,7 @@ describe("Integration - Instance Creation and Manipulation", function()
 	it("should prevent creating disallowed classes", function()
 		-- Add a disallowed class for this test
 		table.insert(InstanceList.DisallowedClasses, "Script")
+		local disallowedIndex = #InstanceList.DisallowedClasses
 		
 		local testFn = function()
 			local script = (Instance :: any).new("Script")
@@ -76,7 +77,7 @@ describe("Integration - Instance Creation and Manipulation", function()
 		expect(result).toBeNil()
 		
 		-- Cleanup
-		table.remove(InstanceList.DisallowedClasses)
+		table.remove(InstanceList.DisallowedClasses, disallowedIndex)
 	end)
 end)
 

@@ -4,6 +4,10 @@
 	
 	This script demonstrates how to use the test suite in a Roblox environment.
 	You can use this as a template for integrating the tests into your project.
+	
+	NOTE: The require paths in this example use script.Parent which is standard
+	for Roblox/Luau projects. Adjust these paths based on where you place the
+	tests and src folders in your project structure.
 ]]
 
 -- Example 1: Running all tests
