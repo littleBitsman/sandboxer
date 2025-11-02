@@ -16,9 +16,11 @@ tests/
 ├── README.md                    # This file
 ├── TestFramework.luau          # Lightweight testing framework
 ├── RunTests.luau               # Main test runner
+├── ExampleTestUsage.luau       # Example showing how to use the test suite
 ├── InstanceList.test.luau      # Tests for InstanceList module
 ├── InstanceSandboxer.test.luau # Tests for InstanceSandboxer module
-└── Sandboxer.test.luau         # Tests for Sandboxer module
+├── Sandboxer.test.luau         # Tests for Sandboxer module
+└── Integration.test.luau       # Integration tests for complex scenarios
 ```
 
 ## Test Framework
@@ -165,6 +167,37 @@ The `expect()` function provides the following matchers:
   - Nested functions
   - Error handling
 
+### Integration Tests (50+ test cases)
+
+- **Multi-Module Interactions**
+  - Instance creation and manipulation
+  - Event handling with wrapped instances
+  - Service access patterns
+  - Complex data structures
+
+- **Real-World Scenarios**
+  - Async operations (task.wait, task.spawn, task.defer)
+  - Math and computation
+  - String and table operations
+  - Error handling and propagation
+
+- **Security Testing**
+  - Bypass attempt prevention
+  - Metatable manipulation protection
+  - Function environment isolation
+  - Resource access control
+
+- **Performance Testing**
+  - Many wrapped instances
+  - Large data structure wrapping
+  - Rapid creation/destruction
+
+- **Advanced Features**
+  - Custom sandbox configurations
+  - Function hooking in real scenarios
+  - Module requiring system
+  - Resource cleanup
+
 ## Running the Tests
 
 ### In Roblox Studio
@@ -176,6 +209,21 @@ The `expect()` function provides the following matchers:
 ```lua
 local RunTests = require(path.to.tests.RunTests)
 ```
+
+### Using the Example Script
+
+For a demonstration of how to use the test framework:
+
+```lua
+local ExampleTestUsage = require(path.to.tests.ExampleTestUsage)
+```
+
+This example demonstrates:
+- Running all tests
+- Running specific test files
+- Creating custom tests
+- Using lifecycle hooks (beforeEach, afterEach)
+- Testing sandboxed code
 
 ### Expected Output
 

@@ -23,7 +23,8 @@ print("")
 local testModules = {
 	"InstanceList.test",
 	"InstanceSandboxer.test",
-	"Sandboxer.test"
+	"Sandboxer.test",
+	"Integration.test"
 }
 
 local totalSuites = 0

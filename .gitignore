@@ -2,3 +2,10 @@ build
 
 **/target
 **/Cargo.lock
+
+# Test artifacts
+tests/coverage/
+tests/reports/
+*.test.log
+*.test.rbxl
+*.test.rbxlx
