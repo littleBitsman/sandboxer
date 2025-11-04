@@ -22,7 +22,7 @@ fn main() {
     };
 
     let sandboxer_source =
-        read_to_string("./src/Sandboxer.luau").expect("Failed to read Sandboxer.luau");
+        read_to_string("./src/init.luau").expect("Failed to read init.luau");
 
     let instancelist_source =
         read_to_string("./src/InstanceList.luau").expect("Failed to read InstanceList.luau");
