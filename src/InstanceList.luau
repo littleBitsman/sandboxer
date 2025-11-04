@@ -152,7 +152,7 @@ function InstanceList.instanceAllowed(inst: Instance): boolean
 			return true
 		end
 	end
-	return false
+	return inst.Parent == nil and inst ~= game
 end
 
 local WEAK_KEY_METATABLE = { __mode = "k" }
