@@ -10,6 +10,8 @@
 	4. Returns exit code (0 for success, 1 for failure)
 ]]
 
+assert(game, "Must run in Roblox")
+
 local TestFramework = require("@self/TestFramework")
 
 -- Print header
@@ -24,7 +26,7 @@ local totalTests = 0
 local totalPassed = 0
 local totalFailed = 0
 
-for _, moduleName in script.Tests:GetChildren() do
+for _, moduleName in script.tests:GetChildren() do
 	print(`Loading {moduleName}...`)
 	local success, err = pcall(require, moduleName)
 
