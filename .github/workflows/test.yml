@@ -1,0 +1,35 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - main
+      - rbx-tests
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - '.github/workflows/test.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Rust builder
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository }}
+        ref: rbx-tests
+
+    - name: Install Rust (stable)
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
+
+    - name: Run tests
+      run: cargo run --release # the binary runs tests using Luau execution sessions
+      env: 
+        ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
