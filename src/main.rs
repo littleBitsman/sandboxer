@@ -1,7 +1,17 @@
-use std::fs::{File, read_to_string};
+use std::{env::var as env, fs::{read_dir, read_to_string}};
 
 use rbx_binary::to_writer;
 use rbx_dom_weak::{InstanceBuilder, WeakDom};
+
+use reqwest::blocking::*;
+
+const SCRIPT: &str = include_str!("main.luau");
+
+macro_rules! unwrap {
+    (unsafe $expr:expr) => {
+        unsafe { $expr.unwrap_unchecked() }
+    };
+}
 
 fn module_script_with_source(name: &str, source: String) -> InstanceBuilder {
     InstanceBuilder::with_property_capacity("ModuleScript", 1)
@@ -9,41 +19,125 @@ fn module_script_with_source(name: &str, source: String) -> InstanceBuilder {
         .with_property("Source", source)
 }
 
+#[expect(non_snake_case)]
+#[derive(serde::Deserialize)]
+struct LuauExecutionBinaryInputResponse {
+    path: String,
+    #[expect(unused)]
+    size: usize,
+    uploadUri: String,
+}
+
+#[expect(non_snake_case)]
+#[derive(serde::Serialize)]
+struct LuauExecutionTaskRequest {
+    script: &'static str,
+    binaryInput: String,
+    enableBinaryOutput: bool
+}
+
+#[derive(serde::Deserialize)]
+struct LuauExecutionTaskError {
+    code: String,
+    message: String,
+}
+
+#[derive(serde::Deserialize)]
+#[repr(transparent)]
+struct LuauExecutionTaskOutput {
+    results: Vec<String>
+}
+
+#[expect(non_snake_case)]
+#[derive(serde::Deserialize)]
+struct LuauExecutionTaskResponse {
+    path: String,
+    createTime: String,
+    updateTime: String,
+    user: String,
+    state: String,
+    script: String,
+    timeout: String,
+    error: Option<LuauExecutionTaskError>,
+    output: Option<LuauExecutionTaskOutput>,
+    binaryInput: String,
+    enableBinaryOutput: bool,
+    binaryOutputUri: Option<String>,
+}
+
 fn main() {
-    let license = {
-        let license = read_to_string("LICENSE").expect("Failed to read LICENSE file");
-        let mut final_license = String::with_capacity(license.len() + 80);
-        final_license.push_str("--[[\n");
-        final_license.push_str(&license);
-        final_license.push_str("\n--]]\n\n");
-        final_license.push_str("script:Destroy()\n");
-        final_license.push_str("return error(\"This is a LICENSE file (AGPL v3.0)\")");
-        final_license
-    };
+    let api_key = env("ROBLOX_API_KEY").expect("Missing API key");
 
-    let sandboxer_source =
-        read_to_string("./src/init.luau").expect("Failed to read init.luau");
+    let init_source = read_to_string("./test/init.luau").expect("Failed to read init.luau");
+    let testframework_source =
+        read_to_string("./test/TestFramework.luau").expect("Failed to read TestFramework.luau");
 
-    let instancelist_source =
-        read_to_string("./src/InstanceList.luau").expect("Failed to read InstanceList.luau");
-
-    let instancesandboxer_source = read_to_string("./src/InstanceSandboxer.luau")
-        .expect("Failed to read InstanceSandboxer.luau");
+    let tests = read_dir("./test/tests")
+        .expect("Failed to read tests directory")
+        .filter_map(|entry| {
+            let entry = entry.expect("Failed to read test file entry");
+            let path = entry.path();
+            if path.extension().and_then(|s| s.to_str()) != Some("luau") {
+                return None;
+            }
+            Some(module_script_with_source(
+                unwrap!(unsafe path.file_name())
+                    .to_string_lossy()
+                    .replace(".luau", "")
+                    .as_str(),
+                read_to_string(&path)
+                    .unwrap_or_else(|_| panic!("Failed to read {}", path.display())),
+            ))
+        });
 
     let dom = WeakDom::new(
         InstanceBuilder::with_property_capacity("ModuleScript", 1)
-            .with_name("Sandboxer")
-            .with_property("Source", sandboxer_source)
+            .with_name("RunTests")
+            .with_property("Source", init_source)
             .with_children([
-                module_script_with_source("InstanceList", instancelist_source),
-                module_script_with_source("InstanceSandboxer", instancesandboxer_source),
-                module_script_with_source("LICENSE", license),
+                module_script_with_source("TestFramework", testframework_source),
+                InstanceBuilder::new("Folder")
+                    .with_name("tests")
+                    .with_children(tests),
             ]),
     );
 
-    let file = File::create("Sandboxer.rbxm").expect("Failed to open Sandboxer.rbxm");
+    let mut buf = Vec::new();
+    to_writer(&mut buf, &dom, &[dom.root_ref()]).expect("Failed to compile rbxm file");
 
-    to_writer(&file, &dom, &[dom.root_ref()]).expect("Failed to write Sandboxer.rbxm");
+    let cli = Client::new();
+    
+    eprintln!("Uploading test binary ({} bytes)...", buf.len());
+    let binput = cli.post("https://apis.roblox.com/cloud/v2/universes/8382727792/luau-execution-session-task-binary-inputs")
+        .header("X-Api-Key", &api_key)
+        .body(format!("{{\"size\": {}}}", buf.len()))
+        .send()
+        .expect("Create binary input request failed")
+        .error_for_status()
+        .expect("Error while creating Luau execution binary input")
+        .json::<LuauExecutionBinaryInputResponse>()
+        .expect("Failed to parse response");
 
-    eprintln!("Successfully created Sandboxer.rbxm");
+    cli.put(&binput.uploadUri)
+        .body(buf)
+        .send()
+        .expect("Failed to upload binary input")
+        .error_for_status()
+        .expect("Upload request failed");
+
+    eprintln!("Successfully uploaded test binary");
+
+    let response = cli.post("https://apis.roblox.com/cloud/v2/universes/8382727792/places/122953816609099/luau-execution-session-tasks")
+        .header("X-Api-Key", &api_key)
+        .json(&LuauExecutionTaskRequest {
+            script: SCRIPT,
+            binaryInput: binput.path,
+            enableBinaryOutput: true
+        })
+        .send()
+        .expect("Luau execution session request failed")
+        .error_for_status()
+        .expect("Error while spawning Luau execution session")
+        .json::<LuauExecutionTaskOutput>()
+        .expect("Failed to parse response");
 }
