@@ -187,6 +187,9 @@ fn main() {
         .expect("Failed to parse response");
 
     let id = response.path;
+
+    eprintln!("Luau execution session started with ID: {}", id);
+
     let state_req = cli
         .get(format!("https://apis.roblox.com/cloud/v2/{id}"))
         .header("X-Api-Key", &api_key);
