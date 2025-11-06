@@ -1,5 +1,7 @@
 # [v1.3.4] Luau Sandboxer
-[![GitHub Source](https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/github_source.svg)](https://github.com/littleBitsman/sandboxer) [![Documentation](https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/documentation_learn.svg)](https://littlebitsman.dev/sandboxer/api/Sandboxer) ![Tests](https://github.com/littleBitsman/sandboxer/actions/workflows/test.yml/badge.svg)
+[<img src="https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/github_source.svg" alt="Source on GitHub" height="32" />](https://github.com/littleBitsman/sandboxer)
+[<img src="https://gist.github.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/documentation_learn.svg" alt="Source on GitHub" height="32" />](https://littlebitsman.dev/sandboxer/api/Sandboxer)
+![Tests](https://github.com/littleBitsman/sandboxer/actions/workflows/test.yml/badge.svg)
 
 A sandboxer that can *help* protect your game when running user-provided code.
 
