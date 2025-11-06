@@ -18,6 +18,9 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    concurrency:
+      group: luau-execution-session
+      cancel-in-progress: false
 
     steps:
     - name: Checkout Rust builder
