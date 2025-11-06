@@ -11,6 +11,7 @@
 ]]
 
 assert(game, "Must run in Roblox")
+local script = script :: any
 
 local TestFramework = require("@self/TestFramework")
 
@@ -60,12 +61,19 @@ print(`Passed: {totalPassed} ({if totalTests > 0 then math.floor((totalPassed / 
 print(`Failed: {totalFailed} ({if totalTests > 0 then math.floor((totalFailed / totalTests) * 100) else 0}%)`)
 print(string.rep("=", 70))
 
+local returnInfo = {
+	suites = totalSuites,
+	total = totalTests,
+	passed = totalPassed,
+	failed = totalFailed,
+	success = allPassed
+}
+
 if allPassed then
 	print("\n✓ All tests passed!")
 	print("\nTest suite execution completed successfully.\n")
-	return 0
 else
 	warn("\n✗ Some tests failed!")
 	warn("\nTest suite execution completed with failures.\n")
-	return 1
 end
+return returnInfo

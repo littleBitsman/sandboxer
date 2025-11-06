@@ -55,7 +55,7 @@ function TestFramework.describe(name: string, testFn: () -> ())
 		warn(`[TestFramework] Error in test suite '{name}': {err}`)
 	end
 
-	table.insert(allSuites, currentSuite)
+	table.insert(allSuites, currentSuite :: any)
 	currentSuite = previousSuite
 end
 

@@ -1,4 +1,4 @@
-use std::{env::var as env, fs::{read_dir, read_to_string}};
+use std::{env::var as env, time::Duration, thread::sleep, fs::{read_dir, read_to_string}};
 
 use rbx_binary::to_writer;
 use rbx_dom_weak::{InstanceBuilder, WeakDom};
@@ -28,8 +28,8 @@ struct LuauExecutionBinaryInputResponse {
     uploadUri: String,
 }
 
-#[expect(non_snake_case)]
 #[derive(serde::Serialize)]
+#[expect(non_snake_case)]
 struct LuauExecutionTaskRequest {
     script: &'static str,
     binaryInput: String,
@@ -37,6 +37,7 @@ struct LuauExecutionTaskRequest {
 }
 
 #[derive(serde::Deserialize)]
+#[expect(unused)]
 struct LuauExecutionTaskError {
     code: String,
     message: String,
@@ -48,8 +49,8 @@ struct LuauExecutionTaskOutput {
     results: Vec<String>
 }
 
-#[expect(non_snake_case)]
 #[derive(serde::Deserialize)]
+#[expect(non_snake_case, unused)]
 struct LuauExecutionTaskResponse {
     path: String,
     createTime: String,
@@ -138,6 +139,36 @@ fn main() {
         .expect("Luau execution session request failed")
         .error_for_status()
         .expect("Error while spawning Luau execution session")
-        .json::<LuauExecutionTaskOutput>()
+        .json::<LuauExecutionTaskResponse>()
         .expect("Failed to parse response");
+
+    let id = response.path;
+    let state_req = cli.get(format!("https://apis.roblox.com/cloud/v2/{id}"))
+        .header("X-Api-Key", &api_key);
+
+    let mut delay = Duration::from_secs(1);
+    let response = loop {
+        let resp = unwrap!(unsafe state_req.try_clone())
+            .send()
+            .expect("Luau execution session state request failed")
+            .error_for_status()
+            .expect("Error while checking Luau execution session state")
+            .json::<LuauExecutionTaskResponse>()
+            .expect("Failed to parse response");
+
+        match resp.state.as_str() {
+            "COMPLETE" => break resp,
+            "FAILED" => {
+                if let Some(err) = resp.error {
+                    panic!("Luau execution session failed: {}", err.message);
+                }
+            }
+            state => eprintln!("Current state: {state}. Waiting {} seconds before retrying...", delay.as_secs()),
+        }
+
+        sleep(delay);
+        delay *= 2;
+    };
+
+    
 }
