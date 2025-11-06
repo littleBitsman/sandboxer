@@ -226,6 +226,9 @@ fn main() {
 
         for log in logs_resp.luauExecutionSessionTaskLogs {
             for entry in log.structuredMessages {
+                if entry.message.contains("Failed to load sound") {
+                    continue;
+                }
                 eprintln!(
                     "[{}] {}: {}",
                     entry.createTime, entry.messageType, entry.message
