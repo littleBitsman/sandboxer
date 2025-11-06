@@ -1,4 +1,4 @@
-local input = ({...})[1] :: buffer
+local input = ({...})[1].BinaryInput :: buffer
 
 local SerializationService = game:GetService("SerializationService")
 
@@ -8,5 +8,6 @@ test.Parent = workspace
 local results = require(test) :: typeof(require("../test"))
 
 return {
+    BinaryOutput = buffer.create(0),
     ReturnValues = {results, game:GetService("LogService"):GetLogHistory()}
 }

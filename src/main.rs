@@ -1,4 +1,9 @@
-use std::{env::var as env, time::Duration, thread::sleep, fs::{read_dir, read_to_string}};
+use std::{
+    env::var as env,
+    fs::{read_dir, read_to_string},
+    thread::sleep,
+    time::Duration,
+};
 
 use rbx_binary::to_writer;
 use rbx_dom_weak::{InstanceBuilder, WeakDom};
@@ -9,7 +14,10 @@ const SCRIPT: &str = include_str!("main.luau");
 
 macro_rules! unwrap {
     (unsafe $expr:expr) => {
-        unsafe { #[deny(clippy::undocumented_unsafe_blocks)] $expr.unwrap_unchecked() }
+        unsafe {
+            #[deny(clippy::undocumented_unsafe_blocks)]
+            $expr.unwrap_unchecked()
+        }
     };
 }
 
@@ -17,6 +25,12 @@ fn module_script_with_source(name: &str, source: String) -> InstanceBuilder {
     InstanceBuilder::with_property_capacity("ModuleScript", 1)
         .with_name(name)
         .with_property("Source", source)
+}
+
+#[derive(serde::Serialize)]
+#[repr(transparent)]
+struct LuauExecutionBinaryInputRequest {
+    size: usize,
 }
 
 #[expect(non_snake_case)]
@@ -34,7 +48,7 @@ struct LuauExecutionTaskRequest {
     script: &'static str,
     timeout: &'static str,
     binaryInput: String,
-    enableBinaryOutput: bool
+    enableBinaryOutput: bool,
 }
 
 #[derive(serde::Deserialize)]
@@ -47,19 +61,42 @@ struct LuauExecutionTaskError {
 #[derive(serde::Deserialize)]
 #[repr(transparent)]
 struct LuauExecutionTaskOutput {
-    results: Vec<String>
+    results: Vec<String>,
+}
+
+#[derive(serde::Deserialize)]
+#[expect(non_snake_case)]
+struct LuauExecutionTaskLogEntry {
+    message: String,
+    createTime: String,
+    messageType: String,
+}
+
+#[derive(serde::Deserialize)]
+#[expect(non_snake_case, unused)]
+struct LuauExecutionTaskLog {
+    path: String,
+    messages: [(); 0],
+    structuredMessages: Vec<LuauExecutionTaskLogEntry>,
+}
+
+#[derive(serde::Deserialize)]
+#[expect(non_snake_case)]
+struct LuauExecutionTaskLogsResponse {
+    luauExecutionSessionTaskLogs: Vec<LuauExecutionTaskLog>,
+    nextPageToken: String,
 }
 
 #[derive(serde::Deserialize)]
 #[expect(non_snake_case, unused)]
 struct LuauExecutionTaskResponse {
     path: String,
-    createTime: String,
-    updateTime: String,
+    createTime: Option<String>,
+    updateTime: Option<String>,
     user: String,
     state: String,
     script: String,
-    timeout: String,
+    timeout: Option<String>,
     error: Option<LuauExecutionTaskError>,
     output: Option<LuauExecutionTaskOutput>,
     binaryInput: String,
@@ -108,11 +145,11 @@ fn main() {
     to_writer(&mut buf, &dom, &[dom.root_ref()]).expect("Failed to compile rbxm file");
 
     let cli = Client::new();
-    
+
     eprintln!("Uploading test binary ({} bytes)...", buf.len());
     let binput = cli.post("https://apis.roblox.com/cloud/v2/universes/8382727792/luau-execution-session-task-binary-inputs")
         .header("X-Api-Key", &api_key)
-        .body(format!("{{\"size\": {}}}", buf.len()))
+        .json(&LuauExecutionBinaryInputRequest { size: buf.len() })
         .send()
         .expect("Create binary input request failed")
         .error_for_status()
@@ -145,7 +182,8 @@ fn main() {
         .expect("Failed to parse response");
 
     let id = response.path;
-    let state_req = cli.get(format!("https://apis.roblox.com/cloud/v2/{id}"))
+    let state_req = cli
+        .get(format!("https://apis.roblox.com/cloud/v2/{id}"))
         .header("X-Api-Key", &api_key);
 
     let mut delay = Duration::from_secs(1);
@@ -159,20 +197,51 @@ fn main() {
             .expect("Failed to parse response");
 
         match resp.state.as_str() {
-            "COMPLETE" => break resp,
-            "FAILED" => {
-                if let Some(err) = resp.error {
-                    panic!("Luau execution session failed: {}", err.message);
-                } else {
-                    panic!("Luau execution session failed for unknown reason");
-                }
-            }
-            state => eprintln!("Current state: {state}. Waiting {} seconds before retrying...", delay.as_secs()),
+            "COMPLETE" | "FAILED" => break resp,
+            state => eprintln!(
+                "Current state: {state}. Waiting {} seconds before polling again...",
+                delay.as_secs()
+            ),
         }
 
         sleep(delay);
         delay *= 2;
     };
 
-    
+    let mut page_token = String::with_capacity(24);
+
+    loop {
+        let logs_resp = cli
+            .get(format!(
+                "https://apis.roblox.com/cloud/v2/{}/logs?view=STRUCTURED&nextPageToken={}",
+                id, page_token
+            ))
+            .header("X-Api-Key", &api_key)
+            .send()
+            .expect("Luau execution session logs request failed")
+            .error_for_status()
+            .expect("Error while fetching Luau execution session logs")
+            .json::<LuauExecutionTaskLogsResponse>()
+            .expect("Failed to read logs response");
+
+        for log in logs_resp.luauExecutionSessionTaskLogs {
+            for entry in log.structuredMessages {
+                eprintln!(
+                    "[{}] {}: {}",
+                    entry.createTime, entry.messageType, entry.message
+                );
+            }
+        }
+
+        page_token = logs_resp.nextPageToken;
+        if page_token.is_empty() {
+            break;
+        }
+    }
+
+    if result.state == "FAILED" && let Some(err) = result.error {
+        panic!("Luau execution session failed: {}", err.message);
+    } else {
+        panic!("Luau execution session failed for unknown reason");
+    }
 }

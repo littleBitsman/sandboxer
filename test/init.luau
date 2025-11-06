@@ -16,11 +16,12 @@ local script = script :: any
 local TestFramework = require("@self/TestFramework")
 
 -- Print header
-print("\n" .. string.rep("=", 70))
+print()
+print(string.rep("=", 70))
 print("SANDBOXER TEST SUITE")
 print(string.rep("=", 70))
 print("Running comprehensive tests for all modules...")
-print("")
+print()
 
 local totalSuites = 0
 local totalTests = 0
@@ -38,7 +39,9 @@ for _, moduleName in script.tests:GetChildren() do
 	end
 end
 
-print(`\nLoaded {totalSuites} test suite(s)\n`)
+print()
+print("Loaded", totalSuites, "test suite(s)")
+print()
 
 -- Get and print results
 local results = TestFramework.runTests()
@@ -52,7 +55,8 @@ for _, suite in results do
 end
 
 -- Print summary
-print("\n" .. string.rep("=", 70))
+print()
+print(string.rep("=", 70))
 print("FINAL SUMMARY")
 print(string.rep("=", 70))
 print(`Test Suites: {totalSuites}`)
@@ -70,10 +74,14 @@ local returnInfo = {
 }
 
 if allPassed then
-	print("\n✓ All tests passed!")
-	print("\nTest suite execution completed successfully.\n")
+	print()
+	print("✓ All tests passed!")
+	print()
+	print("Test suite execution completed successfully.\n")
 else
-	warn("\n✗ Some tests failed!")
-	warn("\nTest suite execution completed with failures.\n")
+	warn()
+	warn("✗ Some tests failed!")
+	warn()
+	warn("Test suite execution completed with failures.\n")
 end
 return returnInfo

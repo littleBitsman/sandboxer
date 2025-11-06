@@ -236,12 +236,14 @@ function TestFramework.printResults(suites: {TestSuite})
 	local totalFailed = 0
 	local totalSkipped = 0
 
-	print("\n" .. string.rep("=", 60))
+	print()
+	print(string.rep("=", 60))
 	print("TEST RESULTS")
 	print(string.rep("=", 60))
 
 	for _, suite in suites do
-		print(`\n{suite.name}`)
+		print()
+		print(suite.name)
 		print(string.rep("-", 60))
 
 		for _, test in suite.tests do
@@ -262,9 +264,11 @@ function TestFramework.printResults(suites: {TestSuite})
 		print(`  Passed: {suite.passed}, Failed: {suite.failed}, Skipped: {suite.skipped}`)
 	end
 
-	print("\n" .. string.rep("=", 60))
+	print()
+	print(string.rep("=", 60))
 	print(`TOTAL: {totalPassed} passed, {totalFailed} failed, {totalSkipped} skipped`)
-	print(string.rep("=", 60) .. "\n")
+	print(string.rep("=", 60))
+	print()
 
 	return totalFailed == 0
 end
