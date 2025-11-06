@@ -9,7 +9,7 @@ const SCRIPT: &str = include_str!("main.luau");
 
 macro_rules! unwrap {
     (unsafe $expr:expr) => {
-        unsafe { $expr.unwrap_unchecked() }
+        unsafe { #[deny(clippy::undocumented_unsafe_blocks)] $expr.unwrap_unchecked() }
     };
 }
 
@@ -32,6 +32,7 @@ struct LuauExecutionBinaryInputResponse {
 #[expect(non_snake_case)]
 struct LuauExecutionTaskRequest {
     script: &'static str,
+    timeout: &'static str,
     binaryInput: String,
     enableBinaryOutput: bool
 }
@@ -132,6 +133,7 @@ fn main() {
         .header("X-Api-Key", &api_key)
         .json(&LuauExecutionTaskRequest {
             script: SCRIPT,
+            timeout: "10s",
             binaryInput: binput.path,
             enableBinaryOutput: true
         })
@@ -147,7 +149,7 @@ fn main() {
         .header("X-Api-Key", &api_key);
 
     let mut delay = Duration::from_secs(1);
-    let response = loop {
+    let result = loop {
         let resp = unwrap!(unsafe state_req.try_clone())
             .send()
             .expect("Luau execution session state request failed")
@@ -161,6 +163,8 @@ fn main() {
             "FAILED" => {
                 if let Some(err) = resp.error {
                     panic!("Luau execution session failed: {}", err.message);
+                } else {
+                    panic!("Luau execution session failed for unknown reason");
                 }
             }
             state => eprintln!("Current state: {state}. Waiting {} seconds before retrying...", delay.as_secs()),
