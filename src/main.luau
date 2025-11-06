@@ -9,5 +9,5 @@ local results = require(test) :: typeof(require("../test"))
 
 return {
     BinaryOutput = buffer.create(0),
-    ReturnValues = {results, game:GetService("LogService"):GetLogHistory()}
+    ReturnValues = {results}
 }
