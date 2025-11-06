@@ -1,8 +1,5 @@
 use std::{
-    env::var as env,
-    fs::{read_dir, read_to_string},
-    thread::sleep,
-    time::Duration,
+    env::var as env, fs::{read_dir, read_to_string}, process, thread::sleep, time::Duration
 };
 
 use rbx_binary::to_writer;
@@ -28,13 +25,12 @@ fn module_script_with_source(name: &str, source: String) -> InstanceBuilder {
 }
 
 #[derive(serde::Serialize)]
-#[repr(transparent)]
 struct LuauExecutionBinaryInputRequest {
     size: usize,
 }
 
-#[expect(non_snake_case)]
 #[derive(serde::Deserialize)]
+#[expect(non_snake_case)]
 struct LuauExecutionBinaryInputResponse {
     path: String,
     #[expect(unused)]
@@ -59,9 +55,18 @@ struct LuauExecutionTaskError {
 }
 
 #[derive(serde::Deserialize)]
-#[repr(transparent)]
+#[expect(unused)]
+struct LuauExecutionTaskResult {
+    suites: u32,
+    total: u32,
+    passed: u32,
+    failed: u32,
+    success: bool,
+}
+
+#[derive(serde::Deserialize)]
 struct LuauExecutionTaskOutput {
-    results: Vec<String>,
+    results: [LuauExecutionTaskResult; 1],
 }
 
 #[derive(serde::Deserialize)]
@@ -242,9 +247,17 @@ fn main() {
         }
     }
 
-    if result.state == "FAILED" && let Some(err) = result.error {
-        panic!("Luau execution session failed: {}", err.message);
+    if result.state == "FAILED" {
+        if let Some(err) = result.error {
+            panic!("Luau execution session failed: {}", err.message);
+        } else {
+            panic!("Luau execution session failed for unknown reason");
+        }
+    }
+
+    if let Some(LuauExecutionTaskOutput { results: [result] }) = result.output {
+        process::exit(if result.success { 0 } else { 1 })
     } else {
-        panic!("Luau execution session failed for unknown reason");
+        panic!("Luau execution session has no output");
     }
 }
