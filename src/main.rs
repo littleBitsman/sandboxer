@@ -52,7 +52,6 @@ struct LuauExecutionTaskError {
 }
 
 #[derive(serde::Deserialize)]
-#[expect(unused)]
 struct LuauExecutionTaskResult {
     suites: u32,
     total: u32,
@@ -256,9 +255,16 @@ fn main() {
         } else {
             panic!("Luau execution session failed for unknown reason");
         }
+    } else if result.state != "COMPLETE" {
+        // this is handled by the polling loop
+        unreachable!()
     }
 
     if let Some(LuauExecutionTaskOutput { results: [result] }) = result.output {
+        eprintln!(
+            "Results: {} suites, {} tests ({} passed, {} failed)",
+            result.suites, result.total, result.passed, result.failed
+        );
         process::exit(if result.success { 0 } else { 1 })
     } else {
         panic!("Luau execution session has no output");
