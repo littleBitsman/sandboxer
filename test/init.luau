@@ -28,6 +28,7 @@ local totalTests = 0
 local totalPassed = 0
 local totalFailed = 0
 
+local startTime = os.clock()
 for _, moduleName in script.tests:GetChildren() do
 	print(`Loading {moduleName}...`)
 	local success, err = pcall(require, moduleName)
@@ -38,6 +39,7 @@ for _, moduleName in script.tests:GetChildren() do
 		totalSuites += 1
 	end
 end
+local TestTime = os.clock() - startTime
 
 print()
 print("Loaded", totalSuites, "test suite(s)")
@@ -63,6 +65,8 @@ print(`Test Suites: {totalSuites}`)
 print(`Total Tests: {totalTests}`)
 print(`Passed: {totalPassed} ({if totalTests > 0 then math.floor((totalPassed / totalTests) * 100) else 0}%)`)
 print(`Failed: {totalFailed} ({if totalTests > 0 then math.floor((totalFailed / totalTests) * 100) else 0}%)`)
+print()
+print("Execution Time: " .. string.format("%.2f", TestTime) .. " seconds")
 print(string.rep("=", 60))
 
 local returnInfo = {
@@ -70,7 +74,9 @@ local returnInfo = {
 	total = totalTests,
 	passed = totalPassed,
 	failed = totalFailed,
-	success = allPassed
+	success = allPassed,
+
+	time = TestTime
 }
 
 if allPassed then

@@ -58,6 +58,7 @@ struct LuauExecutionTaskResult {
     passed: u32,
     failed: u32,
     success: bool,
+    time: f64,
 }
 
 #[derive(serde::Deserialize)]
@@ -262,8 +263,8 @@ fn main() {
 
     if let Some(LuauExecutionTaskOutput { results: [result] }) = result.output {
         eprintln!(
-            "Results: {} suites, {} tests ({} passed, {} failed)",
-            result.suites, result.total, result.passed, result.failed
+            "Results ({:?}): {} suites, {} tests ({} passed, {} failed)",
+            Duration::from_secs_f64(result.time), result.suites, result.total, result.passed, result.failed
         );
         process::exit(if result.success { 0 } else { 1 })
     } else {
