@@ -216,6 +216,7 @@ fn main() {
 
     let mut page_token = String::with_capacity(24);
 
+    eprintln!("------- Luau Output -------");
     loop {
         let logs_resp = cli
             .get(format!(
@@ -247,6 +248,7 @@ fn main() {
             break;
         }
     }
+    eprintln!("----- End Luau Output -----");
 
     if result.state == "FAILED" {
         if let Some(err) = result.error {
