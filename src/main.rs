@@ -11,10 +11,7 @@ const SCRIPT: &str = include_str!("main.luau");
 
 macro_rules! unwrap {
     (unsafe $expr:expr) => {
-        unsafe {
-            #[deny(clippy::undocumented_unsafe_blocks)]
-            $expr.unwrap_unchecked()
-        }
+        unsafe { $expr.unwrap_unchecked() }
     };
 }
 
@@ -125,6 +122,7 @@ fn main() {
                 return None;
             }
             Some(module_script_with_source(
+                // SAFETY: we know this is a file
                 unwrap!(unsafe path.file_name())
                     .to_string_lossy()
                     .replace(".luau", "")

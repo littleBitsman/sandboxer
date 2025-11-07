@@ -17,9 +17,9 @@ local TestFramework = require("@self/TestFramework")
 
 -- Print header
 print()
-print(string.rep("=", 70))
+print(string.rep("=", 60))
 print("SANDBOXER TEST SUITE")
-print(string.rep("=", 70))
+print(string.rep("=", 60))
 print("Running comprehensive tests for all modules...")
 print()
 
@@ -56,14 +56,14 @@ end
 
 -- Print summary
 print()
-print(string.rep("=", 70))
+print(string.rep("=", 60))
 print("FINAL SUMMARY")
-print(string.rep("=", 70))
+print(string.rep("=", 60))
 print(`Test Suites: {totalSuites}`)
 print(`Total Tests: {totalTests}`)
 print(`Passed: {totalPassed} ({if totalTests > 0 then math.floor((totalPassed / totalTests) * 100) else 0}%)`)
 print(`Failed: {totalFailed} ({if totalTests > 0 then math.floor((totalFailed / totalTests) * 100) else 0}%)`)
-print(string.rep("=", 70))
+print(string.rep("=", 60))
 
 local returnInfo = {
 	suites = totalSuites,
