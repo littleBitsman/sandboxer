@@ -47,3 +47,9 @@ jobs:
       run: cargo run --release # the binary runs tests using Luau execution sessions
       env: 
         ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+    - name: Upload test.rbxm as artifact
+      uses: actions/upload-artifact@v5
+      with:
+        name: test.rbxm
+        path: test.rbxm
+        if-no-files-found: warn
