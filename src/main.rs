@@ -1,6 +1,6 @@
 use std::{
     env::var as env,
-    fs::{read_dir, read_to_string},
+    fs::{self, read_dir, read_to_string},
     panic::{PanicHookInfo, set_hook as set_panic_hook},
     process,
     thread::sleep,
@@ -83,6 +83,11 @@ fn main() {
 
     let mut buf = Vec::new();
     to_writer(&mut buf, &dom, &[dom.root_ref()]).expect("Failed to compile rbxm file");
+
+    fs::write("test.rbxm", &buf).unwrap_or_else(|e| {
+        warn!("failed to write test.rbxm; artifact will not upload to GitHub");
+        warn!("error: {e}")
+    });
 
     let cli = Client::new();
 
