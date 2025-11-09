@@ -1,6 +1,17 @@
 use std::{
-    env::var as env, fs::{read_dir, read_to_string}, process, thread::sleep, time::Duration
+    env::var as env,
+    fs::{read_dir, read_to_string},
+    panic::{PanicHookInfo, set_hook as set_panic_hook},
+    process,
+    thread::sleep,
+    time::Duration,
 };
+
+mod json;
+use json::*;
+
+#[macro_use]
+mod macros;
 
 use rbx_binary::to_writer;
 use rbx_dom_weak::{InstanceBuilder, WeakDom};
@@ -21,92 +32,18 @@ fn module_script_with_source(name: &str, source: String) -> InstanceBuilder {
         .with_property("Source", source)
 }
 
-#[derive(serde::Serialize)]
-struct LuauExecutionBinaryInputRequest {
-    size: usize,
-}
-
-#[derive(serde::Deserialize)]
-#[expect(non_snake_case)]
-struct LuauExecutionBinaryInputResponse {
-    path: String,
-    #[expect(unused)]
-    size: usize,
-    uploadUri: String,
-}
-
-#[derive(serde::Serialize)]
-#[expect(non_snake_case)]
-struct LuauExecutionTaskRequest {
-    script: &'static str,
-    timeout: &'static str,
-    binaryInput: String,
-    enableBinaryOutput: bool,
-}
-
-#[derive(serde::Deserialize)]
-#[expect(unused)]
-struct LuauExecutionTaskError {
-    code: String,
-    message: String,
-}
-
-#[derive(serde::Deserialize)]
-struct LuauExecutionTaskResult {
-    suites: u32,
-    total: u32,
-    passed: u32,
-    failed: u32,
-    success: bool,
-    time: f64,
-}
-
-#[derive(serde::Deserialize)]
-struct LuauExecutionTaskOutput {
-    results: [LuauExecutionTaskResult; 1],
-}
-
-#[derive(serde::Deserialize)]
-#[expect(non_snake_case)]
-struct LuauExecutionTaskLogEntry {
-    message: String,
-    createTime: String,
-    messageType: String,
-}
-
-#[derive(serde::Deserialize)]
-#[expect(non_snake_case, unused)]
-struct LuauExecutionTaskLog {
-    path: String,
-    messages: [(); 0],
-    structuredMessages: Vec<LuauExecutionTaskLogEntry>,
-}
-
-#[derive(serde::Deserialize)]
-#[expect(non_snake_case)]
-struct LuauExecutionTaskLogsResponse {
-    luauExecutionSessionTaskLogs: Vec<LuauExecutionTaskLog>,
-    nextPageToken: String,
-}
-
-#[derive(serde::Deserialize)]
-#[expect(non_snake_case, unused)]
-struct LuauExecutionTaskResponse {
-    path: String,
-    createTime: Option<String>,
-    updateTime: Option<String>,
-    user: String,
-    state: String,
-    script: String,
-    timeout: Option<String>,
-    error: Option<LuauExecutionTaskError>,
-    output: Option<LuauExecutionTaskOutput>,
-    binaryInput: String,
-    enableBinaryOutput: bool,
-    binaryOutputUri: Option<String>,
+fn panic_hook(info: &PanicHookInfo) {
+    fatal!("{}", info.payload_as_str().unwrap_or("explicit panic"));
+    if let Some(location) = info.location() {
+        debug!("panicked at {location}");
+    } else {
+        debug!("panicked at unknown location");
+    }
 }
 
 fn main() {
+    set_panic_hook(Box::new(panic_hook));
+
     let api_key = env("ROBLOX_API_KEY").expect("Missing API key");
 
     let init_source = read_to_string("./test/init.luau").expect("Failed to read init.luau");
@@ -149,7 +86,7 @@ fn main() {
 
     let cli = Client::new();
 
-    eprintln!("Uploading test binary ({} bytes)...", buf.len());
+    info!("Uploading test binary ({} bytes)...", buf.len());
     let binput = cli.post("https://apis.roblox.com/cloud/v2/universes/8382727792/luau-execution-session-task-binary-inputs")
         .header("X-Api-Key", &api_key)
         .json(&LuauExecutionBinaryInputRequest { size: buf.len() })
@@ -167,7 +104,7 @@ fn main() {
         .error_for_status()
         .expect("Upload request failed");
 
-    eprintln!("Successfully uploaded test binary");
+    info!("Successfully uploaded test binary");
 
     let response = cli.post("https://apis.roblox.com/cloud/v2/universes/8382727792/places/122953816609099/luau-execution-session-tasks")
         .header("X-Api-Key", &api_key)
@@ -186,7 +123,7 @@ fn main() {
 
     let id = response.path;
 
-    eprintln!("Luau execution session started with ID: {}", id);
+    debug!("Luau execution session started with ID: {}", id);
 
     let state_req = cli
         .get(format!("https://apis.roblox.com/cloud/v2/{id}"))
@@ -204,7 +141,7 @@ fn main() {
 
         match resp.state.as_str() {
             "COMPLETE" | "FAILED" => break resp,
-            state => eprintln!(
+            state => info!(
                 "Current state: {state}. Waiting {} seconds before polling again...",
                 delay.as_secs()
             ),
@@ -216,7 +153,7 @@ fn main() {
 
     let mut page_token = String::with_capacity(24);
 
-    eprintln!("------- Luau Output -------");
+    info!("------- Luau Output -------");
     loop {
         let logs_resp = cli
             .get(format!(
@@ -233,13 +170,18 @@ fn main() {
 
         for log in logs_resp.luauExecutionSessionTaskLogs {
             for entry in log.structuredMessages {
-                if entry.message.contains("Failed to load sound") {
+                if entry.message.contains("Failed to load sound")
+                    || entry.messageType == "MESSAGE_TYPE_UNSPECIFIED"
+                {
                     continue;
                 }
-                eprintln!(
-                    "[{}] {}: {}",
-                    entry.createTime, entry.messageType, entry.message
-                );
+                match entry.messageType.as_str() {
+                    "ERROR" => error!(time = entry.createTime; "{}", entry.message),
+                    "WARNING" => warn!(time = entry.createTime; "{}", entry.message),
+                    "INFO" => info!(time = entry.createTime; "{}", entry.message),
+                    "OUTPUT" => fprint!(time = entry.createTime; "{}", entry.message),
+                    _ => unreachable!(),
+                }
             }
         }
 
@@ -248,7 +190,7 @@ fn main() {
             break;
         }
     }
-    eprintln!("----- End Luau Output -----");
+    info!("----- End Luau Output -----");
 
     if result.state == "FAILED" {
         if let Some(err) = result.error {
@@ -262,12 +204,47 @@ fn main() {
     }
 
     if let Some(LuauExecutionTaskOutput { results: [result] }) = result.output {
-        eprintln!(
-            "Results ({:?}): {} suites, {} tests ({} passed, {} failed)",
-            Duration::from_secs_f64(result.time), result.suites, result.total, result.passed, result.failed
+        let percent = if result.total > 0 {
+            (result.passed as f64 / result.total as f64) * 100.0
+        } else {
+            100.0
+        };
+        info!(
+            "Results ({:.02?}): {} suites, {} tests ({} passed, {} failed) - {}% passed",
+            Duration::from_secs_f64(result.time),
+            fmt!(BOLD => "{}", result.suites),
+            fmt!(BOLD => "{}", result.total),
+            fmt!(GREEN BOLD => "{}", result.passed),
+            fmt!(RED BOLD => "{}", result.failed),
+            match percent {
+                100.0 => fmt!(GREEN BOLD => "{:.02}", percent),
+                p if p >= 75.0 => fmt!(YELLOW BOLD => "{:.02}", percent),
+                a => fmt!(RED BOLD => "{:.02}", a),
+            }
         );
         process::exit(if result.success { 0 } else { 1 })
     } else {
         panic!("Luau execution session has no output");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(test)]
+    #[test]
+    #[should_panic]
+    fn br() {
+        set_panic_hook(Box::new(panic_hook));
+        fprint!("Hello!");
+        warn!("idk");
+        error!("oops");
+        info!("FYI");
+        debug!("debugging");
+
+        debug!("Done, {}, stuff after", fmt!(RED BOLD => "Hello!"));
+        // std::panic::set_hook(Box::new(|_| std::process::exit(101)));
+        panic!("BRuh");
     }
 }
