@@ -84,10 +84,13 @@ fn main() {
     let mut buf = Vec::new();
     to_writer(&mut buf, &dom, &[dom.root_ref()]).expect("Failed to compile rbxm file");
 
-    fs::write("test.rbxm", &buf).unwrap_or_else(|e| {
-        warn!("failed to write test.rbxm; artifact will not upload to GitHub");
-        warn!("error: {e}")
-    });
+    match fs::write("test.rbxm", &buf) {
+        Ok(()) => info!("Wrote test.rbxm ({} bytes)", buf.len()),
+        Err(e) => {
+            warn!("Failed to write test.rbxm; artifact will not upload to GitHub");
+            warn!("Error: {e}");
+        },
+    }
 
     let cli = Client::new();
 
