@@ -29,11 +29,6 @@ jobs:
         repository: ${{ github.repository }}
         ref: rbx-tests
 
-    - name: Install Rust (stable)
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: stable
-
     - uses: actions/cache@v4
       with:
         path: |
