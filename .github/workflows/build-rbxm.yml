@@ -24,6 +24,17 @@ jobs:
         ref: rbxm-builder
         path: rbxm-builder
 
+    - uses: actions/cache@v4
+      working-directory: rbxm-builder
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
     - name: Build rbxm-builder
       run: cargo build --release
       working-directory: rbxm-builder
