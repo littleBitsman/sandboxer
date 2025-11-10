@@ -32,7 +32,7 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           rbxm-builder/target/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-rbxm-builder
 
     - name: Build rbxm-builder
       run: cargo build --release
