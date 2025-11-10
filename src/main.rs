@@ -147,10 +147,10 @@ fn main() {
             .json::<LuauExecutionTaskResponse>()
             .expect("Failed to parse response");
 
-        match resp.state.as_str() {
-            "COMPLETE" | "FAILED" => break resp,
+        match resp.state {
+            LuauExecutionTaskState::Complete | LuauExecutionTaskState::Failed => break resp,
             state => info!(
-                "Current state: {state}. Waiting {} seconds before polling again...",
+                "Current state: {state:?}. Waiting {} seconds before polling again...",
                 delay.as_secs()
             ),
         }
@@ -179,15 +179,15 @@ fn main() {
         for log in logs_resp.luauExecutionSessionTaskLogs {
             for entry in log.structuredMessages {
                 if entry.message.contains("Failed to load sound")
-                    || entry.messageType == "MESSAGE_TYPE_UNSPECIFIED"
+                    || entry.messageType == LogMessageType::Unspecified
                 {
                     continue;
                 }
-                match entry.messageType.as_str() {
-                    "ERROR" => error!(time = entry.createTime; "{}", entry.message),
-                    "WARNING" => warn!(time = entry.createTime; "{}", entry.message),
-                    "INFO" => info!(time = entry.createTime; "{}", entry.message),
-                    "OUTPUT" => fprint!(time = entry.createTime; "{}", entry.message),
+                match entry.messageType {
+                    LogMessageType::Error => error!(time = entry.createTime; "{}", entry.message),
+                    LogMessageType::Warning => warn!(time = entry.createTime; "{}", entry.message),
+                    LogMessageType::Info => info!(time = entry.createTime; "{}", entry.message),
+                    LogMessageType::Output => fprint!(time = entry.createTime; "{}", entry.message),
                     _ => unreachable!(),
                 }
             }
@@ -200,13 +200,13 @@ fn main() {
     }
     info!("----- End Luau Output -----");
 
-    if result.state == "FAILED" {
+    if result.state == LuauExecutionTaskState::Failed {
         if let Some(err) = result.error {
             panic!("Luau execution session failed: {}", err.message);
         } else {
             panic!("Luau execution session failed for unknown reason");
         }
-    } else if result.state != "COMPLETE" {
+    } else if result.state != LuauExecutionTaskState::Complete {
         // this is handled by the polling loop
         unreachable!()
     }
