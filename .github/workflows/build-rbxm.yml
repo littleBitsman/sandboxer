@@ -24,11 +24,6 @@ jobs:
         ref: rbxm-builder
         path: rbxm-builder
 
-    - name: Install Rust (stable)
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: stable
-
     - name: Build rbxm-builder
       run: cargo build --release
       working-directory: rbxm-builder
