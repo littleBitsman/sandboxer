@@ -85,26 +85,25 @@ end
 local STRING_RESOLVER_PATTERN = "([^/]+)/?"
 function ResolveStringPath(mod: Instance, str: string): Instance?
 	local i = 0
-	local currentInstance: Instance?
-	for resolver, _ in str:gmatch(STRING_RESOLVER_PATTERN) do
+	local iter = str:gmatch(STRING_RESOLVER_PATTERN)
+	local currentInstance: Instance? do
+		local first = iter()
+		if first == "." then
+			currentInstance = mod.Parent
+		elseif first == ".." then
+			if not mod.Parent then return end
+			currentInstance = mod.Parent.Parent
+		elseif first == "@self" then
+			currentInstance = mod
+		end
+	end
+	if not currentInstance then return end
+	for resolver in iter do
 		i += 1
-		if i == 1 then
-			if resolver == "." then
-				currentInstance = mod.Parent
-			elseif resolver == ".." then
-				if not mod.Parent then return end
-				currentInstance = mod.Parent.Parent
-			elseif resolver == "@self" then
-				currentInstance = mod
-			else
-				return
-			end
-		elseif currentInstance then
-			if resolver == ".." then
-				currentInstance = currentInstance.Parent
-			else
-				currentInstance = currentInstance:FindFirstChild(resolver)
-			end
+		if resolver == ".." then
+			currentInstance = currentInstance.Parent
+		else
+			currentInstance = currentInstance:FindFirstChild(resolver)
 		end
 
 		if not currentInstance then return end

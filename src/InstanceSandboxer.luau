@@ -159,16 +159,15 @@ InstanceSandboxer.unwrap = InstanceList.unwrap
 	method call on an `Instance`.
 ]=]
 function InstanceSandboxer.unwrapArgs(...: any): ...any
-	local args = {...}
-	local n = select("#", ...)
-	if #args ~= n then
-		args[n + 1] = 0 -- little trick to include nils that were passed
+	local args = table.pack(...)
+	if #args ~= args.n then
+		args[args.n + 1] = 0 -- little trick to include nils that were passed
 	end
 	local visited = {}
-	for i = 1, #args do
+	for i = 1, args.n do
 		args[i] = InstanceSandboxer.deepUnwrap(args[i], visited)
 	end
-	return unpack(args, 1, n)
+	return unpack(args, 1, args.n)
 end
 
 --[=[
@@ -178,16 +177,15 @@ end
 	them ready to be returned to the sandboxed environment.
 ]=]
 function InstanceSandboxer.wrapArgs(...: any): ...any
-	local args = {...}
-	local n = select("#", ...)
-	if #args ~= n then
-		args[n + 1] = 0 -- little trick to include nils that were passed
+	local args = table.pack(...)
+	if #args ~= args.n then
+		args[args.n + 1] = 0 -- little trick to include nils that were passed
 	end
 	local visited = {}
-	for i = 1, #args do
+	for i = 1, args.n do
 		args[i] = InstanceSandboxer.deepWrap(args[i], nil, nil, visited)
 	end
-	return unpack(args, 1, n)
+	return unpack(args, 1, args.n)
 end
 
 --[=[
