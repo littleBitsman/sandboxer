@@ -84,7 +84,6 @@ end
 
 local STRING_RESOLVER_PATTERN = "([^/]+)/?"
 function ResolveStringPath(mod: Instance, str: string): Instance?
-	local i = 0
 	local iter = str:gmatch(STRING_RESOLVER_PATTERN)
 	local currentInstance: Instance? do
 		local first = iter()
@@ -97,16 +96,15 @@ function ResolveStringPath(mod: Instance, str: string): Instance?
 			currentInstance = mod
 		end
 	end
-	if not currentInstance then return end
+
 	for resolver in iter do
-		i += 1
+		if not currentInstance then return end
+
 		if resolver == ".." then
 			currentInstance = currentInstance.Parent
 		else
 			currentInstance = currentInstance:FindFirstChild(resolver)
 		end
-
-		if not currentInstance then return end
 	end
 
 	return currentInstance

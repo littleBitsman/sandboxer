@@ -250,7 +250,9 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 		end)
 
 		if not success then
-			error(`{key} is not a valid member of {inst.ClassName} "{inst.Name}"`, 2)
+			-- value contains the error message
+			error(tostring(value), 2)
+			--error(`{key} is not a valid member of {inst.ClassName} "{inst.Name}"`, 2)
 		end
 		if typeof(value) == "function" then
 			local hooked = HOOK_CACHE[inst][key]
@@ -269,7 +271,9 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 			(inst :: any)[key] = value
 		end)
 		if not success then
-			local err = rawerr or "" 
+			local err = tostring(rawerr) or ""
+			error(err, 2)
+			--[[
 			if err:find("not a valid member") then
 				error(`{key} is not a valid member of {inst.ClassName} "{inst.Name}"`, 2)
 			elseif err:find("Unable to assign property") then
@@ -277,6 +281,7 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 			else -- No other errors while setting properties can occur
 				error("unreachable", 2) 
 			end
+			]]
 		end
 	end
 
