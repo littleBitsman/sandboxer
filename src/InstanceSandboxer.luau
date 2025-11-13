@@ -578,6 +578,9 @@ function InstanceSandboxer.hookFunction<A..., R...>(inst: Instance, name: string
 			end
 		else
 			HOOK_CACHE[inst][name] = nil
+			if not next(HOOK_CACHE[inst]) then
+				HOOK_CACHE[inst] = nil
+			end
 		end
 	else
 		error(`cannot hook {name} on {inst:GetFullName()} because it is invalid or is not a function`, 2)
