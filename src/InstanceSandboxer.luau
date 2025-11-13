@@ -225,6 +225,14 @@ function InstanceSandboxer.reverseWrapFn(fn: AnyFn): AnyFn
 	end
 end
 
+-- Avoids creating closures
+local function get(t: any, k: string)
+	return t[k]
+end
+local function set(t: any, k: string, v: any)
+	t[k] = v
+end
+
 local HOOK_CACHE: { [Instance]: { [string]: AnyFn } } = setmetatable({}, { 
 	__index = function(self, k)
 		self[k] = {}
@@ -245,9 +253,7 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 	DEFAULT_METATABLE.__index = function(self: any, key: any): any
 		local inst: Instance = check(self, true)
 		key = InstanceSandboxer.deepUnwrap(key)
-		local success, value = pcall(function()
-			return (inst :: any)[key]
-		end)
+		local success, value = pcall(get, inst, key)
 
 		if not success then
 			-- value contains the error message
@@ -267,9 +273,7 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 		local inst: Instance = check(self, true)
 		key = InstanceSandboxer.deepUnwrap(key)
 		value = InstanceSandboxer.deepUnwrap(value)
-		local success, rawerr: string? = pcall(function()
-			(inst :: any)[key] = value
-		end)
+		local success, rawerr: string? = pcall(set, inst, key, value)
 		if not success then
 			local err = tostring(rawerr) or ""
 			error(err, 2)
@@ -492,11 +496,7 @@ METHOD_CACHE[Instance.fromExisting] = function(...: Instance)
 end
 
 METHOD_CACHE[typeof] = InstanceSandboxer.typeof
-
--- Avoids creating closures
-local function get(t: any, k: string)
-	return t[k]
-end
+METHOD_CACHE[InstanceSandboxer.typeof] = InstanceSandboxer.typeof
 
 --[=[
 	@within InstanceSandboxer
