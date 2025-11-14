@@ -140,12 +140,16 @@ function InstanceList.instanceAllowed(inst: Instance): boolean
 		end
 	end
 
+	local bool = true
 	for a, allowDescs in ExplicitDisallow do
 		if inst == a then
-			return false
-		elseif allowDescs and inst:IsDescendantOf(a) then
-			return true
+			bool = false
+		-- elseif allowDescs and inst:IsDescendantOf(a) then
+			-- bool = bool and true -- essentially what would be happening
 		end
+	end
+	if not bool then
+		return false
 	end
 	for a, allowDescs in Allow do
 		if inst == a or (allowDescs and inst:IsDescendantOf(a)) then
