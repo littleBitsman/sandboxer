@@ -29,6 +29,7 @@ debug.setmemorycategory("Sandboxer")
 	or if an `Instance` or `RBXScriptSignal` is wrapped or not.
 ]=]
 local InstanceList = {}
+local SandboxRoot = script.Parent
 
 local DisallowedClasses: {string} = {}
 --[=[
@@ -134,23 +135,22 @@ InstanceList.Allow = Allow
 	@param inst -- The `Instance` to check.
 ]=]
 function InstanceList.instanceAllowed(inst: Instance): boolean
+	if inst == SandboxRoot or inst:IsDescendantOf(SandboxRoot) then
+		return false
+	end
+
 	for _, class in ForbiddenClasses do
 		if inst:IsA(class) then
 			return false
 		end
 	end
 
-	local bool = true
 	for a, allowDescs in ExplicitDisallow do
-		if inst == a then
-			bool = false
-		-- elseif allowDescs and inst:IsDescendantOf(a) then
-			-- bool = bool and true -- essentially what would be happening
+		if inst == a or (not allowDescs and inst:IsDescendantOf(a)) then
+			return false
 		end
 	end
-	if not bool then
-		return false
-	end
+	
 	for a, allowDescs in Allow do
 		if inst == a or (allowDescs and inst:IsDescendantOf(a)) then
 			return true
