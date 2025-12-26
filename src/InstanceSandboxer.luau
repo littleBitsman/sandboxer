@@ -290,7 +290,7 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 	end
 
 	DEFAULT_METATABLE.__tostring = function(self: any)
-		return tostring(check(self, true))
+		return tostring(check(self))
 	end
 	DEFAULT_METATABLE.__eq = function(self: any, rhs: any)
 		return check(self) == InstanceSandboxer.unwrap(rhs) and rawequal(self, rhs)
@@ -396,7 +396,7 @@ function InstanceSandboxer.wrapEvent(signal: RBXScriptSignal, name: string): any
 	local metatable = getmetatable(proxy)
 
 	-- Borrow the same metatable, but we're going to overwrite 
-	-- __index, __newindex, and __tostring
+	-- __index and __newindex
 	for k, v in DEFAULT_METATABLE do
 		metatable[k] = v
 	end
@@ -404,10 +404,12 @@ function InstanceSandboxer.wrapEvent(signal: RBXScriptSignal, name: string): any
 	metatable.__index = SIGNAL_INDEX_METAMETHOD
 	metatable.__newindex = INDEX_FAIL
 
+	--[[
 	local STRING = string.match(`Signal {name}`, TRIM_WHITESPACE_PAT)
 	metatable.__tostring = function()
 		return STRING
 	end
+	]]
 
 	WRAPPED_SIGNALS[signal] = proxy
 	UNWRAP_SIGNALS[proxy] = signal
