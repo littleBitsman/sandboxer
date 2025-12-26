@@ -57,9 +57,9 @@ local ForbiddenClasses: {string} = {}
 	
 	A list of classes that are not allowed to be accessed
 	via the sandbox, period. Every time an `Instance` reference
-	is accessed, its class will be checked against this list using
-	`IsA`. If it matches any of the classes in this list, `nil` will
-	be returned instead.
+	is accessed, its class will be checked against this list, 
+	respecting inheritance by using `IsA`. If it matches any of 
+	the classes in this list, `nil` will be returned instead.
 	
 	Items can be added to the list, but it cannot be overwritten.
 	
