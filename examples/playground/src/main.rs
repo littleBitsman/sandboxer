@@ -35,7 +35,7 @@ fn main() -> Result<()> {
     setup_sandbox_globals(&lua, &sandbox_env)?;
     
     // Optionally add dummy Roblox globals if requested
-    let use_roblox_globals = lua.globals().get::<_, bool>("USE_ROBLOX_GLOBALS")
+    let use_roblox_globals = lua.globals().get::<bool>("USE_ROBLOX_GLOBALS")
         .unwrap_or(false);
     
     if use_roblox_globals {
@@ -44,7 +44,7 @@ fn main() -> Result<()> {
     }
 
     // Get custom sandbox configuration from the config script
-    if let Ok(custom_config) = lua.globals().get::<_, Table>("SANDBOX_CONFIG") {
+    if let Ok(custom_config) = lua.globals().get::<Table>("SANDBOX_CONFIG") {
         for pair in custom_config.pairs::<Value, Value>() {
             let (key, value) = pair?;
             sandbox_env.set(key, value)?;
@@ -59,7 +59,7 @@ fn main() -> Result<()> {
         .set_environment(sandbox_env)
         .into_function()?;
     
-    match sandboxed_fn.call::<_, ()>(()) {
+    match sandboxed_fn.call::<()>(()) {
         Ok(_) => {
             println!("\n--- End Output ---");
             println!("\n✓ Script executed successfully");
@@ -75,31 +75,31 @@ fn main() -> Result<()> {
 
 fn setup_sandbox_globals(lua: &Lua, env: &Table) -> Result<()> {
     // Add standard Luau functions
-    env.set("print", lua.globals().get::<_, Function>("print")?)?;
-    env.set("warn", lua.globals().get::<_, Function>("warn")?)?;
-    env.set("error", lua.globals().get::<_, Function>("error")?)?;
-    env.set("assert", lua.globals().get::<_, Function>("assert")?)?;
-    env.set("type", lua.globals().get::<_, Function>("type")?)?;
-    env.set("typeof", lua.globals().get::<_, Function>("typeof")?)?;
-    env.set("tonumber", lua.globals().get::<_, Function>("tonumber")?)?;
-    env.set("tostring", lua.globals().get::<_, Function>("tostring")?)?;
-    env.set("select", lua.globals().get::<_, Function>("select")?)?;
-    env.set("pcall", lua.globals().get::<_, Function>("pcall")?)?;
-    env.set("ipairs", lua.globals().get::<_, Function>("ipairs")?)?;
-    env.set("pairs", lua.globals().get::<_, Function>("pairs")?)?;
-    env.set("next", lua.globals().get::<_, Function>("next")?)?;
-    env.set("rawget", lua.globals().get::<_, Function>("rawget")?)?;
-    env.set("rawset", lua.globals().get::<_, Function>("rawset")?)?;
-    env.set("rawequal", lua.globals().get::<_, Function>("rawequal")?)?;
-    env.set("setmetatable", lua.globals().get::<_, Function>("setmetatable")?)?;
-    env.set("getmetatable", lua.globals().get::<_, Function>("getmetatable")?)?;
+    env.set("print", lua.globals().get::<Function>("print")?)?;
+    env.set("warn", lua.globals().get::<Function>("warn")?)?;
+    env.set("error", lua.globals().get::<Function>("error")?)?;
+    env.set("assert", lua.globals().get::<Function>("assert")?)?;
+    env.set("type", lua.globals().get::<Function>("type")?)?;
+    env.set("typeof", lua.globals().get::<Function>("typeof")?)?;
+    env.set("tonumber", lua.globals().get::<Function>("tonumber")?)?;
+    env.set("tostring", lua.globals().get::<Function>("tostring")?)?;
+    env.set("select", lua.globals().get::<Function>("select")?)?;
+    env.set("pcall", lua.globals().get::<Function>("pcall")?)?;
+    env.set("ipairs", lua.globals().get::<Function>("ipairs")?)?;
+    env.set("pairs", lua.globals().get::<Function>("pairs")?)?;
+    env.set("next", lua.globals().get::<Function>("next")?)?;
+    env.set("rawget", lua.globals().get::<Function>("rawget")?)?;
+    env.set("rawset", lua.globals().get::<Function>("rawset")?)?;
+    env.set("rawequal", lua.globals().get::<Function>("rawequal")?)?;
+    env.set("setmetatable", lua.globals().get::<Function>("setmetatable")?)?;
+    env.set("getmetatable", lua.globals().get::<Function>("getmetatable")?)?;
     
     // Add standard libraries
-    env.set("math", lua.globals().get::<_, Table>("math")?)?;
-    env.set("string", lua.globals().get::<_, Table>("string")?)?;
-    env.set("table", lua.globals().get::<_, Table>("table")?)?;
-    env.set("bit32", lua.globals().get::<_, Table>("bit32")?)?;
-    env.set("utf8", lua.globals().get::<_, Table>("utf8")?)?;
+    env.set("math", lua.globals().get::<Table>("math")?)?;
+    env.set("string", lua.globals().get::<Table>("string")?)?;
+    env.set("table", lua.globals().get::<Table>("table")?)?;
+    env.set("bit32", lua.globals().get::<Table>("bit32")?)?;
+    env.set("utf8", lua.globals().get::<Table>("utf8")?)?;
     
     // Create sandboxed _G and shared
     let self_g = lua.create_table()?;

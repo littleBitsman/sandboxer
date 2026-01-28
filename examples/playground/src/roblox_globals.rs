@@ -19,7 +19,7 @@ impl DummyInstance {
 }
 
 impl UserData for DummyInstance {
-    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+    fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
         methods.add_method("IsA", |_, this, class_name: String| {
             Ok(this.class_name == class_name)
         });
@@ -36,7 +36,7 @@ impl UserData for DummyInstance {
 
         methods.add_method("FindFirstChild", |_, _this, (_name, _recursive): (String, Option<bool>)| {
             // Return nil - no children in dummy implementation
-            Ok(Value::Nil)
+            Ok(Option::<DummyInstance>::None)
         });
 
         methods.add_method("GetChildren", |lua, _this, ()| {
@@ -44,8 +44,13 @@ impl UserData for DummyInstance {
             lua.create_table()
         });
 
-        methods.add_field_method_get("Name", |_, this| Ok(this.name.clone()));
-        methods.add_field_method_get("ClassName", |_, this| Ok(this.class_name.clone()));
+        methods.add_meta_method(MetaMethod::Index, |_, this, key: String| {
+            match key.as_str() {
+                "Name" => Ok(mlua::Value::String(this.name.clone())),
+                "ClassName" => Ok(mlua::Value::String(this.class_name.clone())),
+                _ => Ok(mlua::Value::Nil),
+            }
+        });
 
         methods.add_meta_method(MetaMethod::ToString, |_, this, ()| {
             Ok(this.name.clone())
@@ -72,16 +77,8 @@ pub fn setup_roblox_globals(lua: &Lua, env: &Table) -> Result<()> {
     // Create dummy Instance library
     let instance_lib = lua.create_table()?;
     
-    instance_lib.set("new", lua.create_function(|_, (class_name, parent): (String, Option<Value>)| {
-        let mut instance = DummyInstance::new(class_name.clone(), None);
-        
-        // Set parent if provided
-        if let Some(Value::UserData(parent_ud)) = parent {
-            if let Ok(parent_inst) = parent_ud.borrow::<DummyInstance>() {
-                instance.parent = Some(Box::new(parent_inst.clone()));
-            }
-        }
-        
+    instance_lib.set("new", lua.create_function(|_, class_name: String| {
+        let instance = DummyInstance::new(class_name.clone(), None);
         Ok(instance)
     })?)?;
 
@@ -108,19 +105,21 @@ struct DummyVector3 {
 }
 
 impl UserData for DummyVector3 {
-    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
-        methods.add_field_method_get("X", |_, this| Ok(this.x));
-        methods.add_field_method_get("x", |_, this| Ok(this.x));
-        methods.add_field_method_get("Y", |_, this| Ok(this.y));
-        methods.add_field_method_get("y", |_, this| Ok(this.y));
-        methods.add_field_method_get("Z", |_, this| Ok(this.z));
-        methods.add_field_method_get("z", |_, this| Ok(this.z));
+    fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
+        methods.add_meta_method(MetaMethod::Index, |_, this, key: String| {
+            match key.as_str() {
+                "X" | "x" => Ok(Value::Number(this.x)),
+                "Y" | "y" => Ok(Value::Number(this.y)),
+                "Z" | "z" => Ok(Value::Number(this.z)),
+                _ => Ok(Value::Nil),
+            }
+        });
 
         methods.add_meta_method(MetaMethod::ToString, |_, this, ()| {
             Ok(format!("{}, {}, {}", this.x, this.y, this.z))
         });
 
-        methods.add_meta_method(MetaMethod::Add, |_, this, other: DummyVector3| {
+        methods.add_function("add", |lua, (this, other): (DummyVector3, DummyVector3)| {
             Ok(DummyVector3 {
                 x: this.x + other.x,
                 y: this.y + other.y,
@@ -128,7 +127,7 @@ impl UserData for DummyVector3 {
             })
         });
 
-        methods.add_meta_method(MetaMethod::Sub, |_, this, other: DummyVector3| {
+        methods.add_function("sub", |lua, (this, other): (DummyVector3, DummyVector3)| {
             Ok(DummyVector3 {
                 x: this.x - other.x,
                 y: this.y - other.y,
@@ -136,7 +135,7 @@ impl UserData for DummyVector3 {
             })
         });
 
-        methods.add_meta_method(MetaMethod::Mul, |_, this, scalar: f64| {
+        methods.add_function("mul", |lua, (this, scalar): (DummyVector3, f64)| {
             Ok(DummyVector3 {
                 x: this.x * scalar,
                 y: this.y * scalar,
@@ -164,17 +163,15 @@ struct DummyCFrame {
 }
 
 impl UserData for DummyCFrame {
-    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+    fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
         methods.add_meta_method(MetaMethod::Index, |_, this, key: String| {
             match key.as_str() {
                 "X" | "x" => Ok(Value::Number(this.x)),
                 "Y" | "y" => Ok(Value::Number(this.y)),
                 "Z" | "z" => Ok(Value::Number(this.z)),
-                "Position" | "position" => Ok(Value::UserData(DummyVector3 { 
-                    x: this.x, 
-                    y: this.y, 
-                    z: this.z 
-                })),
+                "Position" | "position" => {
+                    Ok(Value::UserData(DummyVector3 { x: this.x, y: this.y, z: this.z }))
+                },
                 _ => Ok(Value::Nil),
             }
         });
@@ -183,7 +180,7 @@ impl UserData for DummyCFrame {
             Ok(format!("{}, {}, {}", this.x, this.y, this.z))
         });
 
-        methods.add_meta_method(MetaMethod::Mul, |_, this, other: DummyCFrame| {
+        methods.add_function("mul", |lua, (this, other): (DummyCFrame, DummyCFrame)| {
             Ok(DummyCFrame {
                 x: this.x + other.x,
                 y: this.y + other.y,
@@ -215,7 +212,7 @@ struct DummyColor3 {
 }
 
 impl UserData for DummyColor3 {
-    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+    fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
         methods.add_meta_method(MetaMethod::Index, |_, this, key: String| {
             match key.as_str() {
                 "R" | "r" => Ok(Value::Number(this.r)),
@@ -257,7 +254,7 @@ struct DummyUDim2 {
 }
 
 impl UserData for DummyUDim2 {
-    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+    fn add_methods<M: UserDataMethods<Self>>(methods: &mut M) {
         methods.add_meta_method(MetaMethod::ToString, |_, this, ()| {
             Ok(format!("{{{}, {}}}, {{{}, {}}}", 
                 this.x_scale, this.x_offset, 

@@ -1,9 +1,9 @@
 /**
  * Luau Sandboxer Playground
  * Web-based playground for testing sandbox configurations
+ * Uses Fengari (Lua 5.3 in JavaScript)
  */
 
-let luaEngine = null;
 let outputElement = null;
 let configEditor = null;
 let sandboxedEditor = null;
@@ -18,16 +18,12 @@ async function initPlayground() {
     document.getElementById('run-btn').addEventListener('click', runPlayground);
     document.getElementById('clear-btn').addEventListener('click', clearOutput);
 
-    // Initialize Lua engine
-    try {
-        const { LuaFactory } = window.wasmoon;
-        const factory = new LuaFactory();
-        luaEngine = await factory.createEngine();
-        
+    // Check if Fengari is loaded
+    if (typeof fengari !== 'undefined') {
         addOutput('✓ Playground initialized and ready!', 'success');
-    } catch (error) {
-        addOutput('✗ Failed to initialize Lua engine: ' + error.message, 'error');
-        console.error('Initialization error:', error);
+        addOutput('Note: Using Fengari (Lua 5.3). Full Luau syntax may not be supported.', 'info');
+    } else {
+        addOutput('✗ Fengari not loaded. Please check your internet connection.', 'error');
     }
 }
 
@@ -45,233 +41,10 @@ function clearOutput() {
     outputElement.innerHTML = '';
 }
 
-// Create custom print function
-function createPrintFunction() {
-    return (...args) => {
-        const message = args.map(arg => {
-            if (typeof arg === 'object' && arg !== null) {
-                return JSON.stringify(arg);
-            }
-            return String(arg);
-        }).join('\t');
-        addOutput(message, 'normal');
-    };
-}
-
-// Create custom warn function
-function createWarnFunction() {
-    return (...args) => {
-        const message = args.map(arg => String(arg)).join('\t');
-        addOutput(message, 'warning');
-    };
-}
-
-// Create dummy Roblox Instance
-function createDummyInstance(className, name) {
-    return {
-        ClassName: className,
-        Name: name || className,
-        Parent: null,
-        
-        IsA: function(checkClass) {
-            return this.ClassName === checkClass;
-        },
-        
-        GetFullName: function() {
-            let path = [this.Name];
-            let current = this.Parent;
-            while (current) {
-                path.unshift(current.Name);
-                current = current.Parent;
-            }
-            return path.join('.');
-        },
-        
-        FindFirstChild: function(childName, recursive) {
-            return null; // No children in dummy implementation
-        },
-        
-        GetChildren: function() {
-            return [];
-        },
-        
-        toString: function() {
-            return this.Name;
-        }
-    };
-}
-
-// Create dummy Vector3
-function createVector3(x, y, z) {
-    return {
-        X: x || 0,
-        Y: y || 0,
-        Z: z || 0,
-        x: x || 0,
-        y: y || 0,
-        z: z || 0,
-        
-        __add: function(other) {
-            return createVector3(this.X + other.X, this.Y + other.Y, this.Z + other.Z);
-        },
-        
-        __sub: function(other) {
-            return createVector3(this.X - other.X, this.Y - other.Y, this.Z - other.Z);
-        },
-        
-        __mul: function(scalar) {
-            return createVector3(this.X * scalar, this.Y * scalar, this.Z * scalar);
-        },
-        
-        toString: function() {
-            return `${this.X}, ${this.Y}, ${this.Z}`;
-        }
-    };
-}
-
-// Create dummy Color3
-function createColor3(r, g, b) {
-    return {
-        R: r || 0,
-        G: g || 0,
-        B: b || 0,
-        r: r || 0,
-        g: g || 0,
-        b: b || 0,
-        
-        toString: function() {
-            return `${this.R}, ${this.G}, ${this.B}`;
-        }
-    };
-}
-
-// Set up Roblox globals in Lua environment
-async function setupRobloxGlobals() {
-    try {
-        // Set up game
-        const game = createDummyInstance('DataModel', 'game');
-        luaEngine.global.set('game', game);
-        luaEngine.global.set('Game', game);
-        
-        // Set up workspace
-        const workspace = createDummyInstance('Workspace', 'Workspace');
-        luaEngine.global.set('workspace', workspace);
-        luaEngine.global.set('Workspace', workspace);
-        
-        // Set up script
-        const script = createDummyInstance('Script', 'Script');
-        luaEngine.global.set('script', script);
-        
-        // Set up Instance library
-        const Instance = {
-            new: function(className, parent) {
-                const inst = createDummyInstance(className);
-                if (parent) {
-                    inst.Parent = parent;
-                }
-                return inst;
-            }
-        };
-        luaEngine.global.set('Instance', Instance);
-        
-        // Set up Vector3
-        const Vector3 = {
-            new: function(x, y, z) {
-                return createVector3(x, y, z);
-            }
-        };
-        luaEngine.global.set('Vector3', Vector3);
-        
-        // Set up Color3
-        const Color3 = {
-            new: function(r, g, b) {
-                return createColor3(r, g, b);
-            },
-            fromRGB: function(r, g, b) {
-                return createColor3(r / 255, g / 255, b / 255);
-            }
-        };
-        luaEngine.global.set('Color3', Color3);
-        
-        // Set up CFrame
-        const CFrame = {
-            new: function(x, y, z) {
-                return {
-                    X: x || 0,
-                    Y: y || 0,
-                    Z: z || 0,
-                    Position: createVector3(x, y, z),
-                    toString: function() {
-                        return `${this.X}, ${this.Y}, ${this.Z}`;
-                    }
-                };
-            }
-        };
-        luaEngine.global.set('CFrame', CFrame);
-        
-        // Set up UDim2
-        const UDim2 = {
-            new: function(xScale, xOffset, yScale, yOffset) {
-                return {
-                    X: { Scale: xScale || 0, Offset: xOffset || 0 },
-                    Y: { Scale: yScale || 0, Offset: yOffset || 0 },
-                    toString: function() {
-                        return `{${this.X.Scale}, ${this.X.Offset}}, {${this.Y.Scale}, ${this.Y.Offset}}`;
-                    }
-                };
-            }
-        };
-        luaEngine.global.set('UDim2', UDim2);
-        
-        // Set up basic Enum
-        const Enum = {
-            Material: {
-                Plastic: 256,
-                Wood: 512,
-                Concrete: 816,
-                Metal: 1088
-            },
-            PartType: {
-                Ball: 0,
-                Block: 1,
-                Cylinder: 2
-            }
-        };
-        luaEngine.global.set('Enum', Enum);
-        
-    } catch (error) {
-        addOutput('Error setting up Roblox globals: ' + error.message, 'error');
-        console.error('Setup error:', error);
-    }
-}
-
-// Set up sandbox environment
-async function setupSandboxGlobals() {
-    try {
-        // Override print
-        luaEngine.global.set('print', createPrintFunction());
-        luaEngine.global.set('warn', createWarnFunction());
-        
-        // Create sandboxed _G and shared
-        const sharedTable = {};
-        luaEngine.global.set('_G', sharedTable);
-        luaEngine.global.set('shared', sharedTable);
-        
-        // Remove dangerous functions
-        luaEngine.global.set('loadstring', null);
-        luaEngine.global.set('dofile', null);
-        luaEngine.global.set('loadfile', null);
-        
-    } catch (error) {
-        addOutput('Error setting up sandbox: ' + error.message, 'error');
-        console.error('Setup error:', error);
-    }
-}
-
 // Run the playground
-async function runPlayground() {
-    if (!luaEngine) {
-        addOutput('✗ Lua engine not initialized', 'error');
+function runPlayground() {
+    if (typeof fengari === 'undefined') {
+        addOutput('✗ Fengari not loaded', 'error');
         return;
     }
 
@@ -283,40 +56,92 @@ async function runPlayground() {
     const sandboxedScript = sandboxedEditor.value;
     
     try {
+        const L = fengari.lauxlib.luaL_newstate();
+        fengari.lualib.luaL_openlibs(L);
+
+        // Override print function to capture output
+        const printFn = function(L) {
+            const nargs = fengari.lua.lua_gettop(L);
+            const args = [];
+            for (let i = 1; i <= nargs; i++) {
+                const val = fengari.lua.lua_tostring(L, i);
+                args.push(fengari.interop.to_jsstring(val));
+            }
+            addOutput(args.join('\t'), 'normal');
+            return 0;
+        };
+        
+        fengari.lua.lua_pushcfunction(L, printFn);
+        fengari.lua.lua_setglobal(L, fengari.to_luastring("print"));
+
         // Step 1: Execute configuration script
         addOutput('Loading configuration script...', 'info');
-        await luaEngine.doString(configScript);
+        const configResult = fengari.lauxlib.luaL_loadstring(L, fengari.to_luastring(configScript));
+        if (configResult !== fengari.lua.LUA_OK) {
+            const error = fengari.lua.lua_tostring(L, -1);
+            throw new Error('Config parse error: ' + fengari.interop.to_jsstring(error));
+        }
         
-        // Step 2: Set up sandbox environment
+        const configExecResult = fengari.lua.lua_pcall(L, 0, 0, 0);
+        if (configExecResult !== fengari.lua.LUA_OK) {
+            const error = fengari.lua.lua_tostring(L, -1);
+            throw new Error('Config execution error: ' + fengari.interop.to_jsstring(error));
+        }
+
         addOutput('Setting up sandbox environment...', 'info');
-        await setupSandboxGlobals();
-        
-        // Step 3: Check if Roblox globals should be added
-        const useRobloxGlobals = luaEngine.global.get('USE_ROBLOX_GLOBALS');
+
+        // Step 2: Get USE_ROBLOX_GLOBALS
+        fengari.lua.lua_getglobal(L, fengari.to_luastring("USE_ROBLOX_GLOBALS"));
+        const useRobloxGlobals = fengari.lua.lua_toboolean(L, -1);
+        fengari.lua.lua_pop(L, 1);
+
+        // Step 3: Add Roblox globals if requested
         if (useRobloxGlobals) {
             addOutput('Adding dummy Roblox globals...', 'info');
-            await setupRobloxGlobals();
+            setupRobloxGlobals(L);
         }
-        
-        // Step 4: Apply custom sandbox configuration
-        const sandboxConfig = luaEngine.global.get('SANDBOX_CONFIG');
-        if (sandboxConfig && typeof sandboxConfig === 'object') {
-            for (const [key, value] of Object.entries(sandboxConfig)) {
-                luaEngine.global.set(key, value);
+
+        // Step 4: Apply custom SANDBOX_CONFIG
+        fengari.lua.lua_getglobal(L, fengari.to_luastring("SANDBOX_CONFIG"));
+        if (fengari.lua.lua_istable(L, -1)) {
+            fengari.lua.lua_pushnil(L);
+            while (fengari.lua.lua_next(L, -2) !== 0) {
+                const key = fengari.lua.lua_tostring(L, -2);
+                // Copy value to global
+                fengari.lua.lua_pushvalue(L, -1);
+                fengari.lua.lua_setglobal(L, key);
+                fengari.lua.lua_pop(L, 1);
             }
         }
-        
+        fengari.lua.lua_pop(L, 1);
+
+        // Create sandboxed _G and shared
+        fengari.lua.lua_newtable(L);
+        fengari.lua.lua_pushvalue(L, -1);
+        fengari.lua.lua_setglobal(L, fengari.to_luastring("_G"));
+        fengari.lua.lua_setglobal(L, fengari.to_luastring("shared"));
+
         addOutput('Running sandboxed script...', 'info');
         addOutput('', 'normal');
         addOutput('--- Output ---', 'info');
-        
+
         // Step 5: Execute sandboxed script
-        await luaEngine.doString(sandboxedScript);
-        
+        const sandboxResult = fengari.lauxlib.luaL_loadstring(L, fengari.to_luastring(sandboxedScript));
+        if (sandboxResult !== fengari.lua.LUA_OK) {
+            const error = fengari.lua.lua_tostring(L, -1);
+            throw new Error('Script parse error: ' + fengari.interop.to_jsstring(error));
+        }
+
+        const sandboxExecResult = fengari.lua.lua_pcall(L, 0, 0, 0);
+        if (sandboxExecResult !== fengari.lua.LUA_OK) {
+            const error = fengari.lua.lua_tostring(L, -1);
+            throw new Error('Script execution error: ' + fengari.interop.to_jsstring(error));
+        }
+
         addOutput('--- End Output ---', 'info');
         addOutput('', 'normal');
         addOutput('✓ Script executed successfully', 'success');
-        
+
     } catch (error) {
         addOutput('--- End Output ---', 'info');
         addOutput('', 'normal');
@@ -324,6 +149,225 @@ async function runPlayground() {
         addOutput(error.message || String(error), 'error');
         console.error('Execution error:', error);
     }
+}
+
+// Set up dummy Roblox globals
+function setupRobloxGlobals(L) {
+    // Create dummy Instance metatable
+    const instanceMeta = `
+        local Instance = {}
+        Instance.__index = Instance
+        
+        function Instance.new(className, parent)
+            local inst = setmetatable({
+                ClassName = className,
+                Name = className,
+                Parent = parent
+            }, Instance)
+            return inst
+        end
+        
+        function Instance:IsA(className)
+            return self.ClassName == className
+        end
+        
+        function Instance:GetFullName()
+            local path = {self.Name}
+            local current = self.Parent
+            while current do
+                table.insert(path, 1, current.Name)
+                current = current.Parent
+            end
+            return table.concat(path, ".")
+        end
+        
+        function Instance:FindFirstChild(name, recursive)
+            return nil
+        end
+        
+        function Instance:GetChildren()
+            return {}
+        end
+        
+        function Instance:__tostring()
+            return self.Name
+        end
+        
+        return Instance
+    `;
+    
+    fengari.lauxlib.luaL_loadstring(L, fengari.to_luastring(instanceMeta));
+    fengari.lua.lua_pcall(L, 0, 1, 0);
+    fengari.lua.lua_setglobal(L, fengari.to_luastring("Instance"));
+
+    // Create game
+    const gameCode = `
+        local game = Instance.new("DataModel")
+        game.Name = "game"
+        return game
+    `;
+    fengari.lauxlib.luaL_loadstring(L, fengari.to_luastring(gameCode));
+    fengari.lua.lua_pcall(L, 0, 1, 0);
+    fengari.lua.lua_setglobal(L, fengari.to_luastring("game"));
+    fengari.lua.lua_pushvalue(L, -1);
+    fengari.lua.lua_setglobal(L, fengari.to_luastring("Game"));
+
+    // Create workspace
+    const workspaceCode = `
+        local workspace = Instance.new("Workspace")
+        workspace.Name = "Workspace"
+        return workspace
+    `;
+    fengari.lauxlib.luaL_loadstring(L, fengari.to_luastring(workspaceCode));
+    fengari.lua.lua_pcall(L, 0, 1, 0);
+    fengari.lua.lua_setglobal(L, fengari.to_luastring("workspace"));
+    fengari.lua.lua_pushvalue(L, -1);
+    fengari.lua.lua_setglobal(L, fengari.to_luastring("Workspace"));
+
+    // Create script
+    const scriptCode = `
+        local script = Instance.new("Script")
+        script.Name = "Script"
+        return script
+    `;
+    fengari.lauxlib.luaL_loadstring(L, fengari.to_luastring(scriptCode));
+    fengari.lua.lua_pcall(L, 0, 1, 0);
+    fengari.lua.lua_setglobal(L, fengari.to_luastring("script"));
+
+    // Create Vector3
+    const vector3Meta = `
+        local Vector3 = {}
+        Vector3.__index = Vector3
+        
+        function Vector3.new(x, y, z)
+            return setmetatable({
+                X = x or 0,
+                Y = y or 0,
+                Z = z or 0,
+                x = x or 0,
+                y = y or 0,
+                z = z or 0
+            }, Vector3)
+        end
+        
+        function Vector3:__add(other)
+            return Vector3.new(self.X + other.X, self.Y + other.Y, self.Z + other.Z)
+        end
+        
+        function Vector3:__sub(other)
+            return Vector3.new(self.X - other.X, self.Y - other.Y, self.Z - other.Z)
+        end
+        
+        function Vector3:__mul(scalar)
+            return Vector3.new(self.X * scalar, self.Y * scalar, self.Z * scalar)
+        end
+        
+        function Vector3:__tostring()
+            return self.X .. ", " .. self.Y .. ", " .. self.Z
+        end
+        
+        return Vector3
+    `;
+    fengari.lauxlib.luaL_loadstring(L, fengari.to_luastring(vector3Meta));
+    fengari.lua.lua_pcall(L, 0, 1, 0);
+    fengari.lua.lua_setglobal(L, fengari.to_luastring("Vector3"));
+
+    // Create Color3
+    const color3Meta = `
+        local Color3 = {}
+        Color3.__index = Color3
+        
+        function Color3.new(r, g, b)
+            return setmetatable({
+                R = r or 0,
+                G = g or 0,
+                B = b or 0,
+                r = r or 0,
+                g = g or 0,
+                b = b or 0
+            }, Color3)
+        end
+        
+        function Color3.fromRGB(r, g, b)
+            return Color3.new(r / 255, g / 255, b / 255)
+        end
+        
+        function Color3:__tostring()
+            return self.R .. ", " .. self.G .. ", " .. self.B
+        end
+        
+        return Color3
+    `;
+    fengari.lauxlib.luaL_loadstring(L, fengari.to_luastring(color3Meta));
+    fengari.lua.lua_pcall(L, 0, 1, 0);
+    fengari.lua.lua_setglobal(L, fengari.to_luastring("Color3"));
+
+    // Create CFrame
+    const cframeMeta = `
+        local CFrame = {}
+        CFrame.__index = CFrame
+        
+        function CFrame.new(x, y, z)
+            local pos = Vector3.new(x, y, z)
+            return setmetatable({
+                X = x or 0,
+                Y = y or 0,
+                Z = z or 0,
+                Position = pos
+            }, CFrame)
+        end
+        
+        function CFrame:__tostring()
+            return self.X .. ", " .. self.Y .. ", " .. self.Z
+        end
+        
+        return CFrame
+    `;
+    fengari.lauxlib.luaL_loadstring(L, fengari.to_luastring(cframeMeta));
+    fengari.lua.lua_pcall(L, 0, 1, 0);
+    fengari.lua.lua_setglobal(L, fengari.to_luastring("CFrame"));
+
+    // Create UDim2
+    const udim2Meta = `
+        local UDim2 = {}
+        UDim2.__index = UDim2
+        
+        function UDim2.new(xScale, xOffset, yScale, yOffset)
+            return setmetatable({
+                X = {Scale = xScale or 0, Offset = xOffset or 0},
+                Y = {Scale = yScale or 0, Offset = yOffset or 0}
+            }, UDim2)
+        end
+        
+        function UDim2:__tostring()
+            return "{" .. self.X.Scale .. ", " .. self.X.Offset .. "}, {" .. self.Y.Scale .. ", " .. self.Y.Offset .. "}"
+        end
+        
+        return UDim2
+    `;
+    fengari.lauxlib.luaL_loadstring(L, fengari.to_luastring(udim2Meta));
+    fengari.lua.lua_pcall(L, 0, 1, 0);
+    fengari.lua.lua_setglobal(L, fengari.to_luastring("UDim2"));
+
+    // Create Enum
+    const enumCode = `
+        return {
+            Material = {
+                Plastic = 256,
+                Wood = 512,
+                Concrete = 816,
+                Metal = 1088
+            },
+            PartType = {
+                Ball = 0,
+                Block = 1,
+                Cylinder = 2
+            }
+        }
+    `;
+    fengari.lauxlib.luaL_loadstring(L, fengari.to_luastring(enumCode));
+    fengari.lua.lua_pcall(L, 0, 1, 0);
+    fengari.lua.lua_setglobal(L, fengari.to_luastring("Enum"));
 }
 
 // Initialize when DOM is ready
