@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luau Sandboxer Playground (Embed)</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Embed-specific styles */
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        .playground-header,
+        .playground-footer {
+            display: none; /* Hide header/footer in embed mode */
+        }
+        .playground-container {
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div class="playground-container">
+        <div class="playground-content">
+            <div class="editor-section">
+                <div class="editor-panel">
+                    <div class="panel-header">
+                        <h3>📝 Configuration</h3>
+                        <span class="panel-subtitle">Configure sandbox</span>
+                    </div>
+                    <textarea id="config-editor" class="code-editor" spellcheck="false">-- Enable dummy Roblox globals
+USE_ROBLOX_GLOBALS = true
+
+-- Custom configuration
+SANDBOX_CONFIG = {
+    customFunction = function(msg)
+        print("[Custom] " .. msg)
+    end,
+    customValue = 42,
+}</textarea>
+                </div>
+
+                <div class="editor-panel">
+                    <div class="panel-header">
+                        <h3>🎯 Sandboxed Script</h3>
+                        <span class="panel-subtitle">Your code here</span>
+                    </div>
+                    <textarea id="sandboxed-editor" class="code-editor" spellcheck="false">print("=== Testing Sandbox ===")
+
+-- Test basic Luau
+local x, y = 5, 10
+print("x + y =", x + y)
+
+-- Test custom globals
+if customFunction then
+    customFunction("Hello!")
+end
+
+-- Test Roblox globals
+if Instance then
+    local part = Instance.new("Part")
+    print("Created:", part.ClassName)
+end
+
+print("=== Complete ===")</textarea>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <div class="panel-header">
+                    <h3>📺 Output</h3>
+                    <div class="controls">
+                        <button id="run-btn" class="btn btn-primary">▶️ Run</button>
+                        <button id="clear-btn" class="btn btn-secondary">🗑️ Clear</button>
+                    </div>
+                </div>
+                <div id="output" class="output-display"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/wasmoon@1.16.0/dist/index.js"></script>
+    <script src="playground.js"></script>
+</body>
+</html>

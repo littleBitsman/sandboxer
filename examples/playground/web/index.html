@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luau Sandboxer Playground</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="playground-container">
+        <header class="playground-header">
+            <h1>🔒 Luau Sandboxer Playground</h1>
+            <p>Test your sandbox configuration with live Luau execution</p>
+        </header>
+
+        <div class="playground-content">
+            <div class="editor-section">
+                <div class="editor-panel">
+                    <div class="panel-header">
+                        <h3>📝 Configuration Script</h3>
+                        <span class="panel-subtitle">Configure sandbox environment</span>
+                    </div>
+                    <textarea id="config-editor" class="code-editor" spellcheck="false">--[[
+    Sandbox Configuration Script
+    
+    This script configures the sandbox environment.
+]]
+
+-- Set to true to enable dummy Roblox globals
+USE_ROBLOX_GLOBALS = true
+
+-- Define custom sandbox configuration
+SANDBOX_CONFIG = {
+    customFunction = function(msg)
+        print("[Custom] " .. msg)
+    end,
+    
+    customValue = 42,
+}</textarea>
+                </div>
+
+                <div class="editor-panel">
+                    <div class="panel-header">
+                        <h3>🎯 Sandboxed Script</h3>
+                        <span class="panel-subtitle">Script to run in sandbox</span>
+                    </div>
+                    <textarea id="sandboxed-editor" class="code-editor" spellcheck="false">--[[
+    Sandboxed Script
+    
+    This runs inside the sandbox with limited globals.
+]]
+
+print("=== Testing Sandbox Features ===")
+print()
+
+-- Test basic Luau
+print("1. Basic Luau:")
+local x, y = 5, 10
+print("  x + y =", x + y)
+print()
+
+-- Test standard library
+print("2. Standard Libraries:")
+print("  math.sqrt(16) =", math.sqrt(16))
+print("  string.upper('hello') =", string.upper("hello"))
+print()
+
+-- Test custom globals
+print("3. Custom Configuration:")
+if customFunction then
+    customFunction("Hello from sandbox!")
+end
+if customValue then
+    print("  Custom value:", customValue)
+end
+print()
+
+-- Test Roblox globals
+print("4. Roblox Globals:")
+if game then
+    print("  game:", game)
+end
+if Instance then
+    local part = Instance.new("Part")
+    print("  Created part:", part)
+    print("  Part.Name:", part.Name)
+    print("  Part.ClassName:", part.ClassName)
+end
+if Vector3 then
+    local v1 = Vector3.new(1, 2, 3)
+    local v2 = Vector3.new(4, 5, 6)
+    print("  Vector3 math:", tostring(v1 + v2))
+end
+print()
+
+-- Test shared state
+print("5. Shared State:")
+_G.data = "shared"
+print("  _G.data:", _G.data)
+print()
+
+print("=== Test Complete ===")</textarea>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <div class="panel-header">
+                    <h3>📺 Output</h3>
+                    <div class="controls">
+                        <button id="run-btn" class="btn btn-primary">▶️ Run</button>
+                        <button id="clear-btn" class="btn btn-secondary">🗑️ Clear</button>
+                    </div>
+                </div>
+                <div id="output" class="output-display"></div>
+            </div>
+        </div>
+
+        <footer class="playground-footer">
+            <p>
+                Part of <a href="https://littlebitsman.dev/sandboxer" target="_blank">Sandboxer</a> |
+                <a href="https://github.com/littleBitsman/sandboxer" target="_blank">GitHub</a>
+            </p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/wasmoon@1.16.0/dist/index.js"></script>
+    <script src="playground.js"></script>
+</body>
+</html>
