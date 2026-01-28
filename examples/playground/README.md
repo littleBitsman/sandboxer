@@ -55,11 +55,9 @@ The playground can be embedded in any webpage using an iframe:
 
 ### Technology Stack
 
-- **wasmoon** - Lua 5.4 compiled to WebAssembly with Luau support
+- **Fengari** - Lua 5.3 compiled to JavaScript
 - **Vanilla JavaScript** - No frameworks, lightweight and fast
 - **Responsive CSS** - Works on desktop, tablet, and mobile
-
-## CLI Playground
 
 ## CLI Playground
 

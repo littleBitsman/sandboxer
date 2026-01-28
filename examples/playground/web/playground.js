@@ -9,7 +9,7 @@ let configEditor = null;
 let sandboxedEditor = null;
 
 // Initialize the playground
-async function initPlayground() {
+function initPlayground() {
     outputElement = document.getElementById('output');
     configEditor = document.getElementById('config-editor');
     sandboxedEditor = document.getElementById('sandboxed-editor');

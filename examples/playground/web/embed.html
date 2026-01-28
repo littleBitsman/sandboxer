@@ -29,7 +29,7 @@
                         <h3>📝 Configuration</h3>
                         <span class="panel-subtitle">Configure sandbox</span>
                     </div>
-                    <textarea id="config-editor" class="code-editor" spellcheck="false">-- Enable dummy Roblox globals
+                    <textarea id="config-editor" class="code-editor" spellcheck="false" aria-label="Configuration script editor">-- Enable dummy Roblox globals
 USE_ROBLOX_GLOBALS = true
 
 -- Custom configuration
@@ -46,7 +46,7 @@ SANDBOX_CONFIG = {
                         <h3>🎯 Sandboxed Script</h3>
                         <span class="panel-subtitle">Your code here</span>
                     </div>
-                    <textarea id="sandboxed-editor" class="code-editor" spellcheck="false">print("=== Testing Sandbox ===")
+                    <textarea id="sandboxed-editor" class="code-editor" spellcheck="false" aria-label="Sandboxed script editor">print("=== Testing Sandbox ===")
 
 -- Test basic Luau
 local x, y = 5, 10
@@ -80,7 +80,7 @@ print("=== Complete ===")</textarea>
         </div>
     </div>
 
-    <script type="text/javascript" src="https://fengari.io/static/fengari-web.js" type="text/javascript"></script>
+    <script type="text/javascript" src="https://fengari.io/static/fengari-web.js"></script>
     <script src="playground.js"></script>
 </body>
 </html>
