@@ -2,7 +2,7 @@
 --!optimize 2
 --[[
 Sandboxer - a Roblox script sandboxer.
-Copyright (C) 2025 littleBitsman
+Copyright (C) 2026 littleBitsman
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
@@ -31,8 +31,6 @@ debug.setmemorycategory("Sandboxer")
 ]=]
 local InstanceSandboxer = {}
 
-local TRIM_WHITESPACE_PAT = "^%s*(.-)%s*$"
-
 local InstanceList = require("./InstanceList")
 local WRAPPED, UNWRAP = InstanceList.WRAPPED, InstanceList.UNWRAP
 local WRAPPED_SIGNALS, UNWRAP_SIGNALS = InstanceList.WRAPPED_SIGNALS, InstanceList.UNWRAP_SIGNALS
@@ -40,18 +38,22 @@ local WRAPPED_SIGNALS, UNWRAP_SIGNALS = InstanceList.WRAPPED_SIGNALS, InstanceLi
 -- Thank you Luau, very cool! (WHY DOES TYPE CHECKER MAKE ME DO THIS BROOOOOOOOOOOOO)
 InstanceSandboxer.deepUnwrap = nil :: any
 InstanceSandboxer.deepWrap = nil :: any
-InstanceSandboxer.hookFunction = nil :: any
-InstanceSandboxer.isWrapped = nil :: any
-InstanceSandboxer.isWrappedSignal = nil :: any
+InstanceSandboxer.hookMetamethod = nil :: any
+InstanceSandboxer.isWrapped = InstanceList.isWrapped
+InstanceSandboxer.isWrappedSignal = InstanceList.isWrappedSignal
 InstanceSandboxer.typeof = nil :: any
 InstanceSandboxer.reverseWrapFn = nil :: any
-InstanceSandboxer.unwrap = nil :: any
+InstanceSandboxer.unwrap = InstanceList.unwrap
 InstanceSandboxer.unwrapArgs = nil :: any
 InstanceSandboxer.wrapArgs = nil :: any
 InstanceSandboxer.wrapEvent = nil :: any
 InstanceSandboxer.wrapFn = nil :: any
 InstanceSandboxer.wrapInstance = nil :: any
 
+type Metamethod = ("__index" | "__newindex" | "__tostring" 
+| "__eq" | "__call" | "__concat" | "__add" | "__sub" | "__mul" 
+| "__div" | "__idiv" | "__mod" | "__unm" | "__pow" | "__lt" 
+| "__le" | "__len" | "__iter")
 local MATH = {"add", "sub", "mul", "div", "idiv", "mod", "unm", "pow"}
 local LOCKED = "The metatable is locked"
 local INDEX_FAIL = function(self, k: string): never
@@ -233,14 +235,24 @@ local function set(t: any, k: string, v: any)
 	t[k] = v
 end
 
-local HOOK_CACHE: { [Instance]: { [string]: AnyFn } } = setmetatable({}, { 
+--[=[
+	@within InstanceSandboxer
+	@type MetamethodHook (inst: any, fn: (Instance, ...any) -> ...any, ...any) -> ...any
+
+	Type for metamethod hook functions.
+	First argument is the original metamethod function that can be called. **This function expects an unwrapped `Instance` as its first argument.**
+	Second argument is the wrapped `Instance`.
+	Remaining arguments are the arguments passed to the metamethod at invocation.
+]=]
+export type MetamethodHook = (fn: (Instance, ...any) -> ...any, inst: any, ...any) -> ...any
+local INST_METAMETHOD_HOOKS: { [Instance]: { [string]: MetamethodHook } } = setmetatable({}, { 
 	__index = function(self, k)
 		self[k] = {}
 		return self[k] -- will not stack overflow since __index is only called when the key does not exist
 	end,
 	__mode = "k" 
 }) :: any
-local DEFAULT_METATABLE: { [string]: any } = {} do
+local DEFAULT_METATABLE = {} do
 	local function check(a: any, requireInstance: boolean?): any
 		if rawequal(WRAPPED[UNWRAP[a]], a) then
 			return UNWRAP[a]
@@ -250,8 +262,8 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 			error("unreachable", 0)
 		end
 	end
-	DEFAULT_METATABLE.__index = function(self: any, key: any): any
-		local inst: Instance = check(self, true)
+
+	local function internalIndex(inst: Instance, key: any): any
 		key = InstanceSandboxer.deepUnwrap(key)
 		local success, value = pcall(get, inst, key)
 
@@ -260,17 +272,29 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 			error(tostring(value), 2)
 			--error(`{key} is not a valid member of {inst.ClassName} "{inst.Name}"`, 2)
 		end
+		-- Functionality replaced by metamethod hooks
+		--[[
 		if typeof(value) == "function" then
 			local hooked = HOOK_CACHE[inst][key]
 			if hooked then 
 				return hooked
 			end
 		end
+		]]
 
 		return InstanceSandboxer.deepWrap(value, inst, key)
 	end
-	DEFAULT_METATABLE.__newindex = function(self: any, key: any, value: any)
+	DEFAULT_METATABLE.__index = function(self: any, key: any): any
 		local inst: Instance = check(self, true)
+
+		local metamethodHook = INST_METAMETHOD_HOOKS[inst].__index
+		if metamethodHook then
+			return metamethodHook(internalIndex, self, key)
+		end
+		return internalIndex(inst, key)
+	end
+
+	local function internalNewindex(inst: Instance, key: any, value: any)
 		key = InstanceSandboxer.deepUnwrap(key)
 		value = InstanceSandboxer.deepUnwrap(value)
 		local success, rawerr: string? = pcall(set, inst, key, value)
@@ -288,44 +312,150 @@ local DEFAULT_METATABLE: { [string]: any } = {} do
 			]]
 		end
 	end
+	DEFAULT_METATABLE.__newindex = function(self: any, key: any, value: any)
+		local inst: Instance = check(self, true)
+
+		local metamethodHook = INST_METAMETHOD_HOOKS[inst].__newindex
+		if metamethodHook then
+			return metamethodHook(internalNewindex, self, key, value)
+		end
+		return internalNewindex(inst, key, value)
+	end
 
 	DEFAULT_METATABLE.__tostring = function(self: any)
-		return tostring(check(self))
+		local internalSelf = check(self)
+		if typeof(internalSelf) == "Instance" then
+			local metamethodHook = INST_METAMETHOD_HOOKS[internalSelf].__tostring
+			if metamethodHook then
+				return metamethodHook(tostring, self)
+			end
+		end
+		return tostring(internalSelf)
+	end
+
+	local function internalEquals(internalSelf: any, rhs: any): boolean
+		local self = WRAPPED[internalSelf]
+		return internalSelf == InstanceSandboxer.unwrap(rhs) and rawequal(self, rhs)
 	end
 	DEFAULT_METATABLE.__eq = function(self: any, rhs: any)
-		return check(self) == InstanceSandboxer.unwrap(rhs) and rawequal(self, rhs)
+		local internalSelf = check(self)
+		if typeof(internalSelf) == "Instance" then
+			local metamethodHook = INST_METAMETHOD_HOOKS[internalSelf].__eq
+			if metamethodHook then
+				return metamethodHook(internalEquals, self, rhs)
+			end
+		end
+		return internalEquals(internalSelf, rhs)
+	end
+
+	local function internalCall(internalSelf: any, ...: any): never
+		error(`attempt to call a {InstanceSandboxer.typeof(internalSelf)} value`, 2)
 	end
 	DEFAULT_METATABLE.__call = function(self, ...)
-		error(`attempt to call a {InstanceSandboxer.typeof(check(self))} value`, 2)
+		local internalSelf = check(self)
+		if typeof(internalSelf) == "Instance" then
+			local metamethodHook = INST_METAMETHOD_HOOKS[internalSelf].__call
+			if metamethodHook then
+				return metamethodHook(internalCall, self, ...)
+			end
+		end
+		return internalCall(internalSelf, ...)
+	end
+
+	local function internalConcat(internalSelf: any, v: any): never
+		error(`attempt to concatenate {InstanceSandboxer.typeof(internalSelf)} with {InstanceSandboxer.typeof(v)}`, 2)
 	end
 	DEFAULT_METATABLE.__concat = function(self, v)
-		error(`attempt to concatenate {InstanceSandboxer.typeof(check(self))} with {InstanceSandboxer.typeof(v)}`, 2)
+		local internalSelf = check(self)
+		if typeof(internalSelf) == "Instance" then
+			local metamethodHook = INST_METAMETHOD_HOOKS[internalSelf].__concat
+			if metamethodHook then
+				return metamethodHook(internalConcat, self, v)
+			end
+		end
+		return internalConcat(internalSelf, v)
 	end
 
 	for _, math in MATH do
-		DEFAULT_METATABLE[`__{math}`] = function(self, rhs)
-			error(`attempt to perform arithmetic ({math}) on {InstanceSandboxer.typeof(check(self))}` 
+		local mtName = `__{math}`
+		local function internalMath(internalSelf: any, rhs: any): never
+			error(`attempt to perform arithmetic ({math}) on {InstanceSandboxer.typeof(internalSelf)}` 
 				.. (InstanceSandboxer.typeof(rhs) ~= "Instance" and ` and {InstanceSandboxer.typeof(rhs)}` or ""), 
 				2
 			)
 		end
+		DEFAULT_METATABLE[mtName] = function(self, rhs)
+			local internalSelf = check(self)
+			if typeof(internalSelf) == "Instance" then
+				local metamethodHook = INST_METAMETHOD_HOOKS[internalSelf][mtName]
+				if metamethodHook then
+					return metamethodHook(internalMath, self, rhs)
+				end
+			end
+			return internalMath(internalSelf, rhs)
+		end
 	end
 
+	local function internalLt(lhs: any, rhs: any): never
+		error(
+			`attempt to compare {InstanceSandboxer.typeof(lhs)} < {InstanceSandboxer.typeof(rhs)}`,
+			2
+		)
+	end
 	DEFAULT_METATABLE.__lt = function(lhs, rhs)
-		local lhsTy = InstanceSandboxer.typeof(check(lhs))
-		local rhsTy = InstanceSandboxer.typeof(rhs) -- We cannot check rhs, it might not be wrapped
-		error(`attempt to compare {lhsTy} < {rhsTy}`, 2)
+		local internalLhs = check(lhs)
+		if typeof(internalLhs) == "Instance" then
+			local metamethodHook = INST_METAMETHOD_HOOKS[internalLhs].__lt
+			if metamethodHook then
+				return metamethodHook(internalLt, lhs, rhs)
+			end
+		end
+		return internalLt(lhs, rhs)
+	end
+
+	local function internalLe(lhs: any, rhs: any): never
+		error(
+			`attempt to compare {InstanceSandboxer.typeof(lhs)} <= {InstanceSandboxer.typeof(rhs)}`,
+			2
+		)
 	end
 	DEFAULT_METATABLE.__le = function(lhs, rhs)
-		local lhsTy = InstanceSandboxer.typeof(check(lhs))
-		local rhsTy = InstanceSandboxer.typeof(rhs)
-		error(`attempt to compare {lhsTy} <= {rhsTy}`, 2)
+		local internalLhs = check(lhs)
+		if typeof(internalLhs) == "Instance" then
+			local metamethodHook = INST_METAMETHOD_HOOKS[internalLhs].__le
+			if metamethodHook then
+				return metamethodHook(internalLe, lhs, rhs)
+			end
+		end
+		return internalLe(lhs, rhs)
+	end
+
+	local function internalLen(self: any): never
+		error(`attempt to get length of a {InstanceSandboxer.typeof(self)} value`, 2)
 	end
 	DEFAULT_METATABLE.__len = function(self)
-		error(`attempt to get length of a {InstanceSandboxer.typeof(check(self))} value`, 2)
+		local internalSelf = check(self)
+		if typeof(internalSelf) == "Instance" then
+			local metamethodHook = INST_METAMETHOD_HOOKS[internalSelf].__len
+			if metamethodHook then
+				return metamethodHook(internalLen, self)
+			end
+		end
+		return internalLen(internalSelf)
+	end
+	
+	local function internalIter(self: any): never
+		error(`attempt to iterate over a {InstanceSandboxer.typeof(self)} value`, 2)
 	end
 	DEFAULT_METATABLE.__iter = function(self)
-		error(`attempt to iterate over a {InstanceSandboxer.typeof(check(self))} value`, 2)
+		local internalSelf = check(self)
+		if typeof(internalSelf) == "Instance" then
+			local metamethodHook = INST_METAMETHOD_HOOKS[internalSelf].__iter
+			if metamethodHook then
+				return metamethodHook(internalIter, self)
+			end
+		end
+		return internalIter(internalSelf)
 	end
 
 	DEFAULT_METATABLE.__metatable = LOCKED
@@ -500,93 +630,55 @@ end
 METHOD_CACHE[typeof] = InstanceSandboxer.typeof
 METHOD_CACHE[InstanceSandboxer.typeof] = InstanceSandboxer.typeof
 
+local function convertToMetamethodName(name: string): string
+	if typeof(name) ~= "string" then
+		return tostring(name)
+	end
+	if string.sub(name, 1, 2) == "__" then
+		return name
+	else
+		return `__{name}`
+	end
+end
+
 --[=[
 	@within InstanceSandboxer
 
-	Hooks a function on the given instance. 
-	The hook will only work within the sandbox.
+	Hooks a specific metamethod on a wrapped `Instance`. Allows for hooking functions
+	on Instances, modifying behaviors, or changing properties within sandboxed code.
 
-	If you want to hook all calls to a method on all Instances of a class,
-	use `METHOD_CACHE` instead. Read the Sandboxer source at the bottom
-	where HttpService is hooked for an example.
+	### Safety Guarantees
+	- `self` received by the hook is always the wrapped proxy; it is never auto-unwrapped.
+	- Every additional argument reaches the hook untouched; no wrapping, unwrapping, or copying occurs.
+	- Return values flow straight back to the sandbox exactly as yielded by the hook; no automatic wrapping occurs.
+	- The hook therefore must explicitly call `InstanceSandboxer.unwrap`, `deepUnwrap`, `wrapInstance`,
+	  `deepWrap`, or `wrapArgs` whenever data crosses the sandbox boundary. *It is the caller's responsibility to
+	  ensure that this occurs correctly.*
 
-	**If used incorrectly, this can be unsafe. Read below, and use with caution.**
+	### Behavior
+	- The hook completely replaces the default handling of the selected metamethod for `inst`.
+	  - The option to revert to conditionally default behavior is available by calling the first argument,
+	    which is the original metamethod function. This function expects an unwrapped `Instance` as its first argument,
+		followed by any additional arguments passed to the metamethod. *It is highly recommended to passthrough arguments
+		untouched to avoid unexpected behavior.*
+	- If the hook does not call the original metamethod function, the default behavior is skipped.
+	- Hooks do not chain; setting a hook for a metamethod that already has one overwrites the previous hook.
+	- Hooks are per-instance, not inherited.
 
-	# Info
-	This API is intended to be called from *outside* the sandbox (trusted code).
-	It lets you interpose logic before / after an instance method call that
-	originates from sandboxed code.
-
-	The provided `hook` is invoked with the following parameters:
-	```lua
-	hook(origFn, ...)
-	```
-	- `origFn` (function): The original unwrapped Roblox function belonging to `inst`.
-	  It must be called with the raw instance as its first parameter if you invoke it manually:
-	  `origFn(inst, ...)`.
-	- `...`: The raw arguments exactly as they were supplied by the sandboxed caller *after* Luau's
-	  implicit `:` desugaring (i.e. the first vararg is the wrapped proxy for `inst`). *Remember that
-	  sandboxed code can still do something like* `Instance1.Destroy(Instance2)`.
-
-	Important: The hook receives the *wrapped* proxy as its first variadic argument, not the raw `Instance`.
-	Because `origFn` expects the actual `Instance` as the first parameter, do **not** forward the wrapped
-	proxy directly. Instead, use the captured `inst` you supplied to `hookFunction`:
-	```lua
-	InstanceSandboxer.hookFunction(part, "Destroy", function(orig, selfProxy)
-		print("Intercepted Destroy for", part:GetFullName())
-		-- custom logic
-		orig(part) -- call underlying method safely
-	end)
-	```
-
-	# Return Values
-	Whatever the hook returns is forwarded (after normal sandbox wrapping) to the sandboxed caller.
-	If you want to preserve original behavior, return the results of `origFn`:
-	```lua
-	return origFn(inst, ...)
-	```
-
-	# Removing a Hook
-	Pass `nil` as the `hook` argument to remove a previously installed hook:
-	```lua
-	InstanceSandboxer.hookFunction(part, "Destroy", nil)
-	```
-
-	# Errors
-	If the named member does not exist or is not a function, this call errors.
-	Hooks replace one another: only one hook per (`Instance`, `methodName`) pair is stored.
-
-	# Limitations / Security Notes
-	- Hooks are not visible to sandboxed code except through changed behavior. However,
-	  if sandboxed code checks another Instance of the same class' methods, it may observe
-	  that the functions are not equal and thus one has been hooked.
-	- Hooks execute with full trust; ensure any values you return are properly wrapped
-	  if you manually bypass `origFn`.
-	- Because arguments arrive in wrapped form (first arg is a proxy), prefer using
-	  the outer `inst` variable when invoking `origFn`.
-	- Re-entrant calls to the same method on the proxy from inside a hook will also 
-	  trigger the hook. Make sure to use the `origFn` provided.
-
-	@param inst -- The instance to hook the function on.
-	@param name -- The name of the function to hook.
-	@param hook -- The hook function, or `nil` to remove the previous hook.
+	@param inst -- **Unwrapped** Instance to hook.
+	@param name -- Metamethod name (with or without `__` prefix) to hook.
+	@param hook -- Callback invoked when the metamethod fires.
 ]=]
-function InstanceSandboxer.hookFunction<A..., R...>(inst: Instance, name: string, hook: ((origFn: (A...) -> (R...), A...) -> R...?)?)
-	local isValid, fn = pcall(get, inst, name)
-	if isValid and typeof(fn) == "function" then
-		if hook then
-			HOOK_CACHE[inst][name] = function(...)
-				return hook(fn, ...)
-			end
-		else
-			HOOK_CACHE[inst][name] = nil
-			if not next(HOOK_CACHE[inst]) then
-				HOOK_CACHE[inst] = nil
-			end
-		end
-	else
-		error(`cannot hook {name} on {inst:GetFullName()} because it is invalid or is not a function`, 2)
-	end
+function InstanceSandboxer.hookMetamethod(inst: Instance, name: Metamethod, hook: MetamethodHook)
+	-- don't check this with InstanceSandboxer.typeof b/c
+	-- it could let through wrapped instances and this should
+	-- only be called with regular ones from regular scripts
+	local mtName = convertToMetamethodName(name)
+	assert(typeof(inst) == "Instance", "argument #1 to InstanceSandboxer.hookMetamethod must be an Instance")
+	assert(DEFAULT_METATABLE[mtName],  `argument #2 to InstanceSandboxer.hookMetamethod must be a valid metamethod name, got '{tostring(name)}'. check the Roblox documentation for valid metamethod names`)
+	assert(typeof(hook) == "function", "argument #3 to InstanceSandboxer.hookMetamethod must be a function")
+
+	INST_METAMETHOD_HOOKS[inst][mtName] = hook
 end
 
 InstanceSandboxer.METHOD_CACHE = METHOD_CACHE

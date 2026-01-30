@@ -2,7 +2,7 @@
 --!optimize 2
 --[[
 Sandboxer - a Roblox script sandboxer.
-Copyright (C) 2025 littleBitsman
+Copyright (C) 2026 littleBitsman
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
@@ -475,17 +475,13 @@ Sandboxer.InstanceList = InstanceList
 do
 	local HttpService = game:GetService("HttpService")
 	InstanceList.Allow[HttpService] = false -- can still be disabled by ExplicitDisallow
-	InstanceSandboxer.hookFunction(HttpService, "GetAsync", function(_origFn, ...)
-		error("GetAsync is disabled", 2)
-	end)
-	InstanceSandboxer.hookFunction(HttpService, "PostAsync", function(_origFn, ...)
-		error("PostAsync is disabled", 2)
-	end)
-	InstanceSandboxer.hookFunction(HttpService, "RequestAsync", function(_origFn, ...)
-		error("RequestAsync is disabled", 2)
-	end)
-	InstanceSandboxer.hookFunction(HttpService, "GetSecret", function(_origFn, ...)
-		error("GetSecret is disabled", 2)
+	InstanceSandboxer.hookMetamethod(HttpService, "__index", function(oldIndex, self: Instance, key: string)
+		if key == "GetAsync" or key == "PostAsync" or key == "RequestAsync" or key == "GetSecret" then
+			return function(...)
+				error(`HttpService:{key} is disabled`, 2)
+			end
+		end
+		return oldIndex(HttpService, key)
 	end)
 end
 
