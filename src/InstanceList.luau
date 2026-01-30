@@ -2,7 +2,7 @@
 --!optimize 2
 --[[
 Sandboxer - a Roblox script sandboxer.
-Copyright (C) 2025 littleBitsman
+Copyright (C) 2026 littleBitsman
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
