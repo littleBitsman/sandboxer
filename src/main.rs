@@ -13,7 +13,6 @@ use json::*;
 #[macro_use]
 mod macros;
 
-use rbx_binary::to_writer;
 use rbx_dom_weak::{InstanceBuilder, WeakDom};
 
 use reqwest::blocking::*;
@@ -36,15 +35,13 @@ fn panic_hook(info: &PanicHookInfo) {
     fatal!("{}", info.payload_as_str().unwrap_or("explicit panic"));
     if let Some(location) = info.location() {
         debug!("panicked at {location}");
-    } else {
-        debug!("panicked at unknown location");
     }
 }
 
 fn main() {
     set_panic_hook(Box::new(panic_hook));
 
-    let api_key = env("ROBLOX_API_KEY").expect("Missing API key");
+    let mut latest_rbxm = rbx_binary::from_reader(fs::File::open("Sandboxer.rbxm").unwrap()).unwrap();
 
     let init_source = read_to_string("./test/init.luau").expect("Failed to read init.luau");
     let testframework_source =
@@ -69,28 +66,37 @@ fn main() {
             ))
         });
 
-    let dom = WeakDom::new(
-        InstanceBuilder::with_property_capacity("ModuleScript", 1)
-            .with_name("RunTests")
-            .with_property("Source", init_source)
-            .with_children([
-                module_script_with_source("TestFramework", testframework_source),
-                InstanceBuilder::new("Folder")
-                    .with_name("tests")
-                    .with_children(tests),
-            ]),
+    let mut dom = WeakDom::new(
+        InstanceBuilder::new("Model")
+            .with_name("Sandboxer-Tests")
+            .with_child(
+                InstanceBuilder::with_property_capacity("ModuleScript", 1)
+                    .with_name("RunTests")
+                    .with_property("Source", init_source)
+                    .with_children([
+                        module_script_with_source("TestFramework", testframework_source),
+                        InstanceBuilder::new("Folder")
+                            .with_name("tests")
+                            .with_children(tests),
+                    ]),
+            ),
     );
+    let root = dom.root_ref();
+    latest_rbxm.transfer(latest_rbxm.root().children()[0], &mut dom, root);
+    drop(latest_rbxm);
 
     let mut buf = Vec::new();
-    to_writer(&mut buf, &dom, &[dom.root_ref()]).expect("Failed to compile rbxm file");
+    rbx_binary::to_writer(&mut buf, &dom, &[root]).expect("Failed to compile rbxm file");
 
     match fs::write("test.rbxm", &buf) {
         Ok(()) => info!("Wrote test.rbxm ({} bytes)", buf.len()),
         Err(e) => {
             warn!("Failed to write test.rbxm; artifact will not upload to GitHub");
             warn!("Error: {e}");
-        },
+        }
     }
+
+    let api_key = env("ROBLOX_API_KEY").expect("Missing API key");
 
     let cli = Client::new();
 
