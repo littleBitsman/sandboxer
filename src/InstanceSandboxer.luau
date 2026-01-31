@@ -334,7 +334,7 @@ local DEFAULT_METATABLE = {} do
 	end
 
 	local function internalEquals(internalSelf: any, rhs: any): boolean
-		local self = WRAPPED[internalSelf]
+		local self = WRAPPED[internalSelf] or WRAPPED_SIGNALS[internalSelf]
 		return internalSelf == InstanceSandboxer.unwrap(rhs) and rawequal(self, rhs)
 	end
 	DEFAULT_METATABLE.__eq = function(self: any, rhs: any)
