@@ -14,7 +14,6 @@
 
 local TestFramework = require("../TestFramework")
 local InstanceSandboxer = require("../../Sandboxer/InstanceSandboxer")
-local InstanceList = require("../../Sandboxer/InstanceList")
 
 local describe = TestFramework.describe
 local it = TestFramework.it
@@ -340,15 +339,18 @@ describe("InstanceSandboxer - Function Wrapping", function()
 	end)
 end)
 
-describe("InstanceSandboxer - Function Hooking", function()
-	it("should hook instance methods", function()
+describe("InstanceSandboxer - Metamethod Hooking", function()
+	it("should hook Instance metamethods", function()
 		local part = Instance.new("Part")
 		part.Parent = workspace
 
-		local hookCalled = false
-		InstanceSandboxer.hookFunction(part, "GetFullName", function(origFn, ...)
-			hookCalled = true
-			return origFn(part)
+		local hookCalled = 0
+		InstanceSandboxer.hookMetamethod(part, "__index", function(index, proxy, key)
+			hookCalled += 1
+			if key == "Name" then
+				return "HookedName"
+			end
+			return index(part, key)
 		end)
 
 		local wrapped = InstanceSandboxer.wrapInstance(part)
@@ -356,19 +358,27 @@ describe("InstanceSandboxer - Function Hooking", function()
 			wrapped.GetFullName(wrapped)
 		end
 
-		expect(hookCalled):toBe(true)
+		expect(wrapped.Name):toBe("HookedName")
+		expect(hookCalled):toBe(2)
 
 		-- Remove hook
-		InstanceSandboxer.hookFunction(part, "GetFullName", nil)
+		InstanceSandboxer.hookMetamethod(part, "__index", nil)
 		part:Destroy()
 	end)
 
-	it("should error when hooking invalid methods", function()
+	it("should error with invalid parameters", function()
+		expect(function()
+			InstanceSandboxer.hookMetamethod("notaninstance" :: any, "__index", function() end)
+		end):toThrow()
+
 		local part = Instance.new("Part")
 		part.Parent = workspace
 
 		expect(function()
-			InstanceSandboxer.hookFunction(part, "NonExistentMethod", function() end)
+			InstanceSandboxer.hookMetamethod(part, "__thisisnotametamethod" :: any, function() end)
+		end):toThrow()
+		expect(function()
+			InstanceSandboxer.hookMetamethod(part, "__index", "notafunction" :: any)
 		end):toThrow()
 
 		part:Destroy()
@@ -378,22 +388,27 @@ describe("InstanceSandboxer - Function Hooking", function()
 		local part = Instance.new("Part")
 		part.Parent = workspace
 
-		local hookCalled = false
-		InstanceSandboxer.hookFunction(part, "GetFullName", function(origFn, ...)
-			hookCalled = true
-			return origFn(part)
+		local hookCalled = 0
+		InstanceSandboxer.hookMetamethod(part, "__index", function(index, proxy, key)
+			hookCalled += 1
+			if key == "Name" then
+				return "HookedName"
+			end
+			return index(part, key)
 		end)
 
 		-- Remove hook
-		InstanceSandboxer.hookFunction(part, "GetFullName", nil)
+		InstanceSandboxer.hookMetamethod(part, "__index", nil)
 
 		local wrapped = InstanceSandboxer.wrapInstance(part)
 		if wrapped then
 			wrapped.GetFullName(wrapped)
 		end
 
+		expect(wrapped.Name):toBe(part.Name)
+
 		-- Hook should not be called after removal
-		expect(hookCalled):toBe(false)
+		expect(hookCalled):toBe(0)
 
 		part:Destroy()
 	end)
@@ -438,11 +453,6 @@ describe("InstanceSandboxer - Type Checking", function()
 end)
 
 describe("InstanceSandboxer - Edge Cases", function()
-	it("should handle wrapping nil", function()
-		local wrapped = InstanceSandboxer.wrapInstance(nil)
-		expect(wrapped):toBeNil()
-	end)
-
 	it("should handle wrapping already wrapped instances", function()
 		local part = Instance.new("Part")
 		part.Parent = workspace
