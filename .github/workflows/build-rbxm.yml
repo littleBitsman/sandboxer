@@ -2,9 +2,6 @@ name: Build RBXM & Test
 
 on:
   push:
-    branches:
-      - main
-      - rbx-tests
     paths:
       - 'src/**'
       - 'test/**'
