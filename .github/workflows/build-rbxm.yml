@@ -1,9 +1,13 @@
-name: Build RBXM
+name: Build RBXM & Test
 
 on:
   push:
+    branches:
+      - main
+      - rbx-tests
     paths:
       - 'src/**'
+      - 'test/**'
       - '.github/workflows/build-rbxm.yml'
 
 env:
@@ -18,16 +22,16 @@ jobs:
 
     steps:
     - name: Checkout Luau source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Checkout Rust builder
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: ${{ github.repository }}
         ref: rbxm-builder
         path: rbxm-builder
 
-    - uses: actions/cache@v4
+    - uses: actions/cache@v5
       with:
         path: |
           ~/.cargo/bin/
@@ -44,20 +48,62 @@ jobs:
     - name: Run builder to create Sandboxer.rbxm
       run: ./rbxm-builder/target/release/rbxm-builder
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: Sandboxer.rbxm
         path: Sandboxer.rbxm
+        
+  test:
+    needs: build-rbxm
+    runs-on: ubuntu-latest
+    concurrency:
+      group: luau-execution-session
+      cancel-in-progress: false
+
+    steps:
+    - name: Checkout Rust builder
+      uses: actions/checkout@v6
+      with:
+        repository: ${{ github.repository }}
+        ref: rbx-tests
+
+    - uses: actions/cache@v5
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        
+    - uses: actions/download-artifact@v7
+      with:
+        name: Sandboxer.rbxm
+        path: .
+        
+    - name: Run tests
+      run: cargo run --release # the binary runs tests using Luau execution sessions
+      env: 
+        ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
+    - name: Upload test.rbxm as artifact
+      uses: actions/upload-artifact@v6
+      with:
+        name: test.rbxm
+        path: test.rbxm
+        if-no-files-found: warn
 
   release:
-    needs: build-rbxm
+    needs:
+      - build-rbxm
+      - test
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v7
       with:
         name: Sandboxer.rbxm
         path: .
