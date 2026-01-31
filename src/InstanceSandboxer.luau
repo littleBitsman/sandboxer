@@ -669,16 +669,16 @@ end
 	@param name -- Metamethod name (with or without `__` prefix) to hook.
 	@param hook -- Callback invoked when the metamethod fires.
 ]=]
-function InstanceSandboxer.hookMetamethod(inst: Instance, name: Metamethod, hook: MetamethodHook)
+function InstanceSandboxer.hookMetamethod(inst: Instance, name: Metamethod, hook: MetamethodHook?)
 	-- don't check this with InstanceSandboxer.typeof b/c
 	-- it could let through wrapped instances and this should
 	-- only be called with regular ones from regular scripts
 	local mtName = convertToMetamethodName(name)
 	assert(typeof(inst) == "Instance", "argument #1 to InstanceSandboxer.hookMetamethod must be an Instance")
 	assert(DEFAULT_METATABLE[mtName],  `argument #2 to InstanceSandboxer.hookMetamethod must be a valid metamethod name, got '{tostring(name)}'. check the Roblox documentation for valid metamethod names`)
-	assert(typeof(hook) == "function", "argument #3 to InstanceSandboxer.hookMetamethod must be a function")
+	assert(typeof(hook) == "function" or hook == nil, "argument #3 to InstanceSandboxer.hookMetamethod must be a function or nil")
 
-	INST_METAMETHOD_HOOKS[inst][mtName] = hook
+	INST_METAMETHOD_HOOKS[inst][mtName] = hook :: any
 end
 
 InstanceSandboxer.METHOD_CACHE = METHOD_CACHE
