@@ -56,9 +56,9 @@ jobs:
   test:
     needs: build-rbxm
     runs-on: ubuntu-latest
-    concurrency:
-      group: luau-execution-session
-      cancel-in-progress: false
+    # concurrency:
+      # group: luau-execution-session
+      # cancel-in-progress: false
 
     steps:
     - name: Checkout Rust builder
