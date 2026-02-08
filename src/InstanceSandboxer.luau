@@ -79,7 +79,7 @@ local METHOD_CACHE: { [AnyFn]: AnyFn } = setmetatable({}, { __mode = "k" }) :: a
 	@param instance Instance? -- The `Instance` if wrapping one of its properties, methods, or events.
 	@param key string? -- The key of the property, method, or event being wrapped, if applicable.
 ]=]
-function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, pvisited: { [any]: any }?, freeze: boolean?): any
+function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, freeze: boolean?, pvisited: { [any]: any }?): any
 	local visited: { [any]: any } = pvisited or {}
 
 	if visited[v] ~= nil then
@@ -100,11 +100,12 @@ function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, p
 		visited[v] = new
 		local nil_ = newproxy()
 		for k, val in v do
-			local wrappedKey = InstanceSandboxer.deepWrap(k, nil, k, visited)
-			local wrappedVal = InstanceSandboxer.deepWrap(val, nil, k, visited)
-			new[wrappedKey] = wrappedVal
+			local wrappedKey = InstanceSandboxer.deepWrap(k, nil, k, freeze, visited)
+			local wrappedVal = InstanceSandboxer.deepWrap(val, nil, k, freeze, visited)
 			if typeof(k) == "number" and wrappedVal == nil then
 				new[wrappedKey] = nil_
+			else 
+				new[wrappedKey] = wrappedVal
 			end
 		end
 		
@@ -133,8 +134,9 @@ end
 	If `v` is a wrapped `Instance` or `RBXScriptSignal`, it will be unwrapped and returned.
 
 	@param v any -- The value to deeply unwrap.
+	@param freeze boolean? -- Whether to freeze tables.
 ]=]
-function InstanceSandboxer.deepUnwrap(v: any, pvisited: { [any]: any }?): any
+function InstanceSandboxer.deepUnwrap(v: any, freeze: boolean?, pvisited: { [any]: any }?): any
 	local visited: { [any]: any } = pvisited or {}
 
 	if visited[v] ~= nil then
@@ -151,11 +153,21 @@ function InstanceSandboxer.deepUnwrap(v: any, pvisited: { [any]: any }?): any
 	if ty == "table" then
 		local new = {}
 		visited[v] = new
+		local nil_ = newproxy()
 		for k, val in v do
-			local unwrappedKey = InstanceSandboxer.deepUnwrap(k, visited)
-			local unwrappedVal = InstanceSandboxer.deepUnwrap(val, visited)
-			new[unwrappedKey] = unwrappedVal
+			local unwrappedKey = InstanceSandboxer.deepUnwrap(k, freeze, visited)
+			local unwrappedVal = InstanceSandboxer.deepUnwrap(val, freeze, visited)
+			if typeof(unwrappedKey) == "number" and unwrappedVal == nil then
+				new[unwrappedKey] = nil_
+			else
+				new[unwrappedKey] = unwrappedVal
+			end
 		end
+
+		while table.find(new, nil_) do
+			table.remove(new, table.find(new, nil_))
+		end
+
 		return new
 	elseif typeof(v) == "function" then
 		return InstanceSandboxer.reverseWrapFn(v)
@@ -181,7 +193,7 @@ function InstanceSandboxer.unwrapArgs(...: any): ...any
 	end
 	local visited = {}
 	for i = 1, args.n do
-		args[i] = InstanceSandboxer.deepUnwrap(args[i], visited)
+		args[i] = InstanceSandboxer.deepUnwrap(args[i], false, visited)
 	end
 	return unpack(args, 1, args.n)
 end
@@ -199,7 +211,7 @@ function InstanceSandboxer.wrapArgs(...: any): ...any
 	end
 	local visited = {}
 	for i = 1, args.n do
-		args[i] = InstanceSandboxer.deepWrap(args[i], nil, nil, visited)
+		args[i] = InstanceSandboxer.deepWrap(args[i], nil, nil, false, visited)
 	end
 	return unpack(args, 1, args.n)
 end
@@ -211,26 +223,42 @@ end
 	The wrapped function will return wrapped arguments when called.
 
 	@param fn AnyFn -- The function to wrap.
+	@param passthroughIn boolean -- Whether to passthrough arguments untouched.
+	@param passthroughOut boolean -- Whether to passthrough return values untouched.
 	@return AnyFn -- The wrapped function.
 ]=]
-function InstanceSandboxer.wrapFn(fn: AnyFn): AnyFn
+function InstanceSandboxer.wrapFn(fn: AnyFn, passthroughIn: boolean?, passthroughOut: boolean?): AnyFn
 	if METHOD_CACHE[fn] then
 		return METHOD_CACHE[fn]
 	end
 
-	METHOD_CACHE[fn] = function(...)
-		return InstanceSandboxer.wrapArgs(fn(InstanceSandboxer.unwrapArgs(...)))
+	if passthroughIn then
+		if passthroughOut then
+			METHOD_CACHE[fn] = fn -- Bruh.
+		else
+			METHOD_CACHE[fn] = function(...)
+				return InstanceSandboxer.wrapArgs(fn(...))
+			end
+		end
+	elseif passthroughOut then
+		METHOD_CACHE[fn] = function(...)
+			return fn(InstanceSandboxer.unwrapArgs(...))
+		end
+	else
+		METHOD_CACHE[fn] = function(...)
+			return InstanceSandboxer.wrapArgs(fn(InstanceSandboxer.unwrapArgs(...)))
+		end
 	end
 
 	return METHOD_CACHE[fn]
 end
-InstanceSandboxer.typeof = InstanceSandboxer.wrapFn(typeof)
+InstanceSandboxer.typeof = InstanceSandboxer.wrapFn(typeof, false, true)
 
 --[=[
 	@within InstanceSandboxer
 
 	Wraps a function in a proxy that allows it to be safely used outside the sandbox.
-	This is mainly used for callbacks being added to stuff like BindableFunctions.
+	This is mainly used for callbacks being added for things like BindableFunctions.
 
 	@param fn AnyFn -- The function to wrap.
 	@return AnyFn -- The wrapped function.
