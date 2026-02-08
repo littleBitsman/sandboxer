@@ -32,12 +32,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	Having this be the first line guarantees that the script is sandboxed before any other code runs.
 	You would have to check if it is the first line of code yourself, using external sources with
 	modules such as [rbx-reader](https://npmjs.org/package/rbx-reader).
-	
-	More customizability is planned for the future, such as:
-	- Customizing the environment
-	- Customizing allowed Instances
-	- Customizing allowed RBXScriptSignals
-	- Customizing allowed methods
 ]=]
 local Sandboxer = {}
 
