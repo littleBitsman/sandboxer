@@ -1,5 +1,2 @@
-build
-Sandboxer
-
 **/target
 **/Cargo.lock
