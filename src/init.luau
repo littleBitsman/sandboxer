@@ -45,6 +45,9 @@ local __METATABLE = "No."
 local InstanceSandboxer = require("@self/InstanceSandboxer")
 local InstanceList = require("@self/InstanceList")
 
+local GAME_SANDBOXED = InstanceSandboxer.wrapInstance(game)
+local WORKSPACE_SANDBOXED = InstanceSandboxer.wrapInstance(workspace)
+
 -- TODO: any way to get around deoptimization because of this? (and getfenv/setfenv below?)
 local LOADSTRING_ENABLED = pcall(loadstring, "return nil")
 
@@ -57,9 +60,6 @@ local version, elapsedTime do
 	version = {fenv.version, fenv.Version}
 	elapsedTime = {fenv.elapsedTime, fenv.ElapsedTime}
 end
-
-local GAME_SANDBOXED = InstanceSandboxer.wrapInstance(game)
-local WORKSPACE_SANDBOXED = InstanceSandboxer.wrapInstance(workspace)
 
 function _fprint(...: any)
 	print("[SANDBOX SECURITY]", ...)
@@ -94,6 +94,8 @@ function ResolveStringPath(mod: Instance, str: string): Instance?
 			currentInstance = mod.Parent.Parent
 		elseif first == "@self" then
 			currentInstance = mod
+		elseif first == "@game" then
+			currentInstance = game
 		end
 	end
 
@@ -238,6 +240,25 @@ function Sandboxer.EditDefaultSandbox(config: { [string]: any }): boolean
 	return success
 end
 
+local SENTRY = game:GetService("HttpService"):GenerateGUID(false)
+local IS_SANDBOXED_REF = newproxy(true) do
+	local mt = getmetatable(IS_SANDBOXED_REF)
+	mt.__index = function(self, k): any
+		if self == IS_SANDBOXED_REF and k == SENTRY then
+			return SENTRY
+		else
+			return nil
+		end
+	end
+	mt.__tostring = function() return "The metatable is locked" end
+	mt.__metatable = "The metatable is locked"
+	mt.__eq = function(self, other)
+		return rawequal(getmetatable(other), IS_SANDBOXED_REF) and
+			rawequal(getmetatable(self), other) and
+			other[SENTRY] == SENTRY
+	end
+end
+
 --[=[
 	@within Sandboxer
 
@@ -258,7 +279,7 @@ end
 ]=]
 function Sandboxer:Init()	
 	local CallingFenv, LEVEL = GetHighestEnv()
-	if CallingFenv.game == GAME_SANDBOXED then
+	if getmetatable(CallingFenv :: any) == IS_SANDBOXED_REF then
 		return
 	end
 
@@ -266,8 +287,6 @@ function Sandboxer:Init()
 
 	Sandboxer:Sandbox(theFunction)
 end
-
-local IS_SANDBOXED_REF = newproxy()
 
 --[=[
 	@within Sandboxer
@@ -302,7 +321,6 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		return
 	end
 	local CallingScript = CallingFenv.script
-	local WrappedScript = InstanceSandboxer.wrapInstance(CallingScript)
 
 	local function _require(a: any)
 		return SafeRequire(a, CallingScript)
@@ -319,39 +337,39 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		Game = GAME_SANDBOXED,
 		workspace = WORKSPACE_SANDBOXED,
 		Workspace = WORKSPACE_SANDBOXED,
-		script = WrappedScript,
+		script = InstanceSandboxer.deepWrap(CallingScript),
 
 		-- Not-so-dangerous-but-still-dangerous stuff
 		xpcall = xpcallIsBad,
 
 		-- Normal stuff
-		print = print,
-		warn = warn,
-		error = error,
-		assert = assert,
+		print = InstanceSandboxer.wrapFn(print),
+		warn = InstanceSandboxer.wrapFn(warn),
+		error = InstanceSandboxer.wrapFn(error),
+		assert = InstanceSandboxer.wrapFn(assert),
 		gcinfo = gcinfo,
-		getmetatable = getmetatable,
-		ipairs = ipairs,
-		next = next,
-		pairs = pairs,
-		pcall = pcall,
-		rawget = rawget,
-		rawset = rawset,
-		rawequal = rawequal,
-		rawlen = rawlen,
-		require = _require,
+		getmetatable = InstanceSandboxer.wrapFn(getmetatable),
+		ipairs = InstanceSandboxer.wrapFn(ipairs),
+		next = InstanceSandboxer.wrapFn(next),
+		pairs = InstanceSandboxer.wrapFn(pairs),
+		pcall = InstanceSandboxer.wrapFn(pcall),
+		rawget = InstanceSandboxer.wrapFn(rawget),
+		rawset = InstanceSandboxer.wrapFn(rawset),
+		rawequal = InstanceSandboxer.wrapFn(rawequal),
+		rawlen = InstanceSandboxer.wrapFn(rawlen),
+		require = InstanceSandboxer.wrapFn(_require),
 		select = select,
-		setmetatable = setmetatable,
+		setmetatable = InstanceSandboxer.wrapFn(setmetatable),
 		tonumber = tonumber,
 		tostring = tostring,
 		type = type,
-		typeof = typeof,
-		unpack = unpack,
+		typeof = InstanceSandboxer.typeof,
+		unpack = InstanceSandboxer.wrapFn(unpack),
 
 		-- I'm not sure if this is even used but sure ok
 		_VERSION = _VERSION,
-		settings = settings,
-		UserSettings = UserSettings,
+		settings = InstanceSandboxer.wrapFn(settings),
+		UserSettings = InstanceSandboxer.wrapFn(UserSettings),
 
 		-- These are the same. WHY ARE THEY NAMED DIFFERENTLY?
 		version = version[1],
@@ -363,7 +381,6 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		delay = task.delay,
 		spawn = task.defer,
 		wait = task.wait,
-		task = task,
 
 		tick = tick,
 		time = time, 
@@ -376,6 +393,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		os = os,
 		string = string,
 		table = table,
+		task = task,
 		utf8 = utf8,
 		vector = vector, -- Isn't this just Vector3 lol
 
@@ -410,7 +428,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		Region3int16 = Region3int16,
 		RotationCurveKey = RotationCurveKey,
 		Secret = Secret, -- this is literally nil LOL
-		SharedTable = nil, -- TODO wat is this
+		-- SharedTable = nil,
 		TweenInfo = TweenInfo,
 		UDim = UDim,
 		UDim2 = UDim2,
@@ -424,16 +442,16 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		if value == false then
 			fenv[key] = nil
 		else
-			fenv[key] = value
+			fenv[key] = InstanceSandboxer.deepWrap(value)
 		end
 	end
 
-	fenv = setmetatable(InstanceSandboxer.deepWrap(fenv), {
+	setmetatable(fenv, {
 		__metatable = IS_SANDBOXED_REF
 	})
 
 	-- The end yay
-	setfenv(fn, fenv)
+	setfenv(fn, fenv :: any)
 end
 
 --[=[
