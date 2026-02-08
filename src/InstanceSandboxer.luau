@@ -69,6 +69,10 @@ end
 export type AnyFn = (...any) -> ...any
 local METHOD_CACHE: { [AnyFn]: AnyFn } = setmetatable({}, { __mode = "k" }) :: any
 
+local function _compareKeys(a: any, b: any)
+	return a.key < b.key
+end
+
 --[=[
 	@within InstanceSandboxer
 
@@ -98,20 +102,26 @@ function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, f
 	elseif ty == "table" then
 		local new = {}
 		visited[v] = new
-		local nil_ = newproxy()
+		
+		local numerics = {}
 		for k, val in v do
 			local wrappedKey = InstanceSandboxer.deepWrap(k, nil, k, freeze, visited)
 			local wrappedVal = InstanceSandboxer.deepWrap(val, nil, k, freeze, visited)
-			if typeof(k) == "number" and wrappedVal == nil then
-				new[wrappedKey] = nil_
+			if typeof(k) == "number" and math.floor(k) == k and k >= 0 then
+				table.insert(numerics, {
+					key = wrappedKey,
+					val = wrappedVal
+				})
 			else 
 				new[wrappedKey] = wrappedVal
 			end
 		end
-		
-		-- This was unfortunately the best way I could think of doing this :(
-		while table.find(new, nil_) do
-			table.remove(new, table.find(new, nil_))
+
+		table.sort(numerics, _compareKeys)
+		for _, entry in numerics do
+			if entry.val ~= nil then
+				table.insert(new, entry.val)
+			end
 		end
 		
 		if freeze then
@@ -153,19 +163,24 @@ function InstanceSandboxer.deepUnwrap(v: any, freeze: boolean?, pvisited: { [any
 	if ty == "table" then
 		local new = {}
 		visited[v] = new
-		local nil_ = newproxy()
+		local numerics = {}
 		for k, val in v do
 			local unwrappedKey = InstanceSandboxer.deepUnwrap(k, freeze, visited)
 			local unwrappedVal = InstanceSandboxer.deepUnwrap(val, freeze, visited)
-			if typeof(unwrappedKey) == "number" and unwrappedVal == nil then
-				new[unwrappedKey] = nil_
+			if typeof(unwrappedKey) == "number" and math.floor(unwrappedKey) == unwrappedKey 
+				and unwrappedKey > 0 
+			then
+				table.insert(numerics, { key = unwrappedKey, val = unwrappedVal })
 			else
 				new[unwrappedKey] = unwrappedVal
 			end
 		end
 
-		while table.find(new, nil_) do
-			table.remove(new, table.find(new, nil_))
+		table.sort(numerics, _compareKeys)
+		for _, entry in numerics do
+			if entry.val ~= nil then
+				table.insert(new, entry.val)
+			end
 		end
 
 		return new
