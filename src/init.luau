@@ -331,7 +331,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		Game = GAME_SANDBOXED,
 		workspace = WORKSPACE_SANDBOXED,
 		Workspace = WORKSPACE_SANDBOXED,
-		script = InstanceSandboxer.deepWrap(CallingScript),
+		script = InstanceSandboxer.wrapInstance(CallingScript),
 
 		-- Not-so-dangerous-but-still-dangerous stuff
 		xpcall = xpcallIsBad,
@@ -406,7 +406,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		Faces = Faces,
 		FloatCurveKey = FloatCurveKey,
 		Font = Font,
-		Instance = Instance, -- wrapped using a lil trick with METHOD_CACHE
+		Instance = InstanceSandboxer.deepWrap(Instance, nil, nil, nil, true), -- wrapped using a lil trick with METHOD_CACHE
 		NumberRange = NumberRange,
 		NumberSequence = NumberSequence,
 		NumberSequenceKeypoint = NumberSequenceKeypoint,

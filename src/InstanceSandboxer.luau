@@ -79,7 +79,7 @@ local METHOD_CACHE: { [AnyFn]: AnyFn } = setmetatable({}, { __mode = "k" }) :: a
 	@param instance Instance? -- The `Instance` if wrapping one of its properties, methods, or events.
 	@param key string? -- The key of the property, method, or event being wrapped, if applicable.
 ]=]
-function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, pvisited: { [any]: any }?): any
+function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, pvisited: { [any]: any }?, freeze: boolean?): any
 	local visited: { [any]: any } = pvisited or {}
 
 	if visited[v] ~= nil then
@@ -112,6 +112,11 @@ function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, p
 		while table.find(new, nil_) do
 			table.remove(new, table.find(new, nil_))
 		end
+		
+		if freeze then
+			table.freeze(new)
+		end
+
 		return new
 	elseif ty == "function" then
 		local newFn = InstanceSandboxer.wrapFn(v)
