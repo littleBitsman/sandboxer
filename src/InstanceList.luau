@@ -29,7 +29,7 @@ debug.setmemorycategory("Sandboxer")
 	or if an `Instance` or `RBXScriptSignal` is wrapped or not.
 ]=]
 local InstanceList = {}
-local SandboxRoot = script.Parent
+local SandboxRoot = script.Parent :: Instance
 
 local DisallowedClasses: {string} = {}
 --[=[
