@@ -98,10 +98,19 @@ function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, p
 	elseif ty == "table" then
 		local new = {}
 		visited[v] = new
+		local nil_ = newproxy()
 		for k, val in v do
 			local wrappedKey = InstanceSandboxer.deepWrap(k, nil, k, visited)
 			local wrappedVal = InstanceSandboxer.deepWrap(val, nil, k, visited)
 			new[wrappedKey] = wrappedVal
+			if typeof(k) == "number" and wrappedVal == nil then
+				new[wrappedKey] = nil_
+			end
+		end
+		
+		-- This was unfortunately the best way I could think of doing this :(
+		while table.find(new, nil_) do
+			table.remove(new, table.find(new, nil_))
 		end
 		return new
 	elseif ty == "function" then
@@ -625,6 +634,62 @@ METHOD_CACHE[Instance.fromExisting] = function(...: Instance)
 		return nil
 	end
 	return InstanceSandboxer.wrapInstance(Instance.fromExisting(inst))
+end
+
+-- Make all native libraries have pass-throughs for functions.
+-- They're all C functions, so GC isn't a problem
+-- Skips Enum (not iterable), SharedTable (security) and Secret (Secret = nil)
+do
+	local libs: {any} = {
+		bit32,
+		buffer,
+		coroutine,
+		math,
+		os,
+		string,
+		table,
+		task,
+		utf8,
+		vector,
+		Axes,
+		BrickColor,
+		CatalogSearchParams,
+		Color3,
+		ColorSequence,
+		ColorSequenceKeypoint,
+		Content,
+		DateTime,
+		DockWidgetPluginGuiInfo,
+		Faces,
+		FloatCurveKey,
+		Font,
+		NumberSequence,
+		NumberSequenceKeypoint,
+		OverlapParams,
+		Path2DControlPoint,
+		PathWaypoint,
+		PhysicalProperties,
+		Random,
+		Ray,
+		RaycastParams,
+		Rect,
+		Region3,
+		Region3int16,
+		RotationCurveKey,
+		TweenInfo,
+		UDim,
+		UDim2,
+		Vector2,
+		Vector2int16,
+		Vector3,
+		Vector3int16
+	}
+
+	for _, lib in libs do
+		for k, v in lib do
+			METHOD_CACHE[v] = v
+		end
+	end
 end
 
 METHOD_CACHE[typeof] = InstanceSandboxer.typeof
