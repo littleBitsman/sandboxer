@@ -205,7 +205,7 @@ fn poll_task_state(cli: &Client, api_key: &str, id: &str) -> LuauExecutionTaskRe
         }
 
         sleep(delay);
-        delay = delay.max(MAX_POLL_DELAY);
+        delay = MAX_POLL_DELAY.min(delay * 2);
     }
 }
 
