@@ -161,7 +161,7 @@ fn upload_binary(cli: &Client, api_key: &str, buf: &[u8]) -> LuauExecutionBinary
         }).json::<LuauExecutionBinaryInputResponse>()
         .expect("Failed to parse response");
 
-    cli.put(&binput.uploadUri)
+    cli.put(&binput.upload_url)
         .body(buf.to_vec())
         .send()
         .expect("Failed to upload binary input")
@@ -180,8 +180,8 @@ fn spawn_task(cli: &Client, api_key: &str, binary_path: String) -> LuauExecution
         .json(&LuauExecutionTaskRequest {
             script: SCRIPT,
             timeout: "10s",
-            binaryInput: binary_path,
-            enableBinaryOutput: true,
+            binary_input: binary_path,
+            enable_binary_output: true,
         })
         .send()
         .expect("Luau execution session request failed")
@@ -240,24 +240,24 @@ fn stream_and_print_logs(cli: &Client, api_key: &str, id: &str) {
             .json::<LuauExecutionTaskLogsResponse>()
             .expect("Failed to parse Luau execution logs");
 
-        for log in logs_resp.luauExecutionSessionTaskLogs {
-            for entry in log.structuredMessages {
+        for log in logs_resp.luau_execution_session_task_logs {
+            for entry in log.structured_messages {
                 if entry.message.contains("Failed to load sound")
-                    || entry.messageType == LogMessageType::Unspecified
+                    || entry.message_type == LogMessageType::Unspecified
                 {
                     continue;
                 }
-                match entry.messageType {
-                    LogMessageType::Error => error!(time = entry.createTime; "{}", entry.message),
-                    LogMessageType::Warning => warn!(time = entry.createTime; "{}", entry.message),
-                    LogMessageType::Info => info!(time = entry.createTime; "{}", entry.message),
-                    LogMessageType::Output => fprint!(time = entry.createTime; "{}", entry.message),
+                match entry.message_type {
+                    LogMessageType::Error => error!(time = entry.create_time; "{}", entry.message),
+                    LogMessageType::Warning => warn!(time = entry.create_time; "{}", entry.message),
+                    LogMessageType::Info => info!(time = entry.create_time; "{}", entry.message),
+                    LogMessageType::Output => fprint!(time = entry.create_time; "{}", entry.message),
                     _ => unreachable!(),
                 }
             }
         }
 
-        page_token = logs_resp.nextPageToken;
+        page_token = logs_resp.next_page_token;
         if page_token.is_empty() {
             break;
         }
@@ -268,8 +268,7 @@ fn stream_and_print_logs(cli: &Client, api_key: &str, id: &str) {
 fn main() {
     set_panic_hook(Box::new(panic_hook));
 
-    let dom = build_sandboxer_dom();
-    let buf = build_test_rbxm(dom);
+    let buf = build_test_rbxm(build_sandboxer_dom());
 
     let api_key = env("ROBLOX_API_KEY").expect("Missing API key");
 

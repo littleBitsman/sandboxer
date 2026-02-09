@@ -1,24 +1,26 @@
+#![expect(dead_code)]
+
 #[derive(serde::Serialize, Debug)]
 pub struct LuauExecutionBinaryInputRequest {
     pub size: usize,
 }
 
 #[derive(serde::Deserialize, Debug)]
-#[expect(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub struct LuauExecutionBinaryInputResponse {
     pub path: String,
-    #[expect(dead_code)]
     pub size: usize,
-    pub uploadUri: String,
+    #[serde(rename = "uploadUri")]
+    pub upload_url: String,
 }
 
 #[derive(serde::Serialize, Debug)]
-#[expect(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub struct LuauExecutionTaskRequest {
     pub script: &'static str,
     pub timeout: &'static str,
-    pub binaryInput: String,
-    pub enableBinaryOutput: bool,
+    pub binary_input: String,
+    pub enable_binary_output: bool,
 }
 
 #[derive(serde::Deserialize, Debug, PartialEq, Eq)]
@@ -34,7 +36,6 @@ pub enum LuauExecutionError {
 
 #[derive(serde::Deserialize, Debug)]
 pub struct LuauExecutionTaskError {
-    #[expect(dead_code)]
     pub code: LuauExecutionError,
     pub message: String,
 }
@@ -66,26 +67,26 @@ pub enum LogMessageType {
 }
 
 #[derive(serde::Deserialize, Debug)]
-#[expect(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub struct LuauExecutionTaskLogEntry {
     pub message: String,
-    pub createTime: String,
-    pub messageType: LogMessageType,
+    pub create_time: String,
+    pub message_type: LogMessageType,
 }
 
 #[derive(serde::Deserialize, Debug)]
-#[expect(non_snake_case, dead_code)]
+#[serde(rename_all = "camelCase")]
 pub struct LuauExecutionTaskLog {
     pub path: String,
     pub messages: [(); 0],
-    pub structuredMessages: Vec<LuauExecutionTaskLogEntry>,
+    pub structured_messages: Vec<LuauExecutionTaskLogEntry>,
 }
 
 #[derive(serde::Deserialize, Debug)]
-#[expect(non_snake_case)]
+#[serde(rename_all = "camelCase")]
 pub struct LuauExecutionTaskLogsResponse {
-    pub luauExecutionSessionTaskLogs: Vec<LuauExecutionTaskLog>,
-    pub nextPageToken: String,
+    pub luau_execution_session_task_logs: Vec<LuauExecutionTaskLog>,
+    pub next_page_token: String,
 }
 
 #[derive(serde::Deserialize, Debug, PartialEq, Eq)]
@@ -101,18 +102,18 @@ pub enum LuauExecutionTaskState {
 }
 
 #[derive(serde::Deserialize, Debug)]
-#[expect(non_snake_case, dead_code)]
+#[serde(rename_all = "camelCase")]
 pub struct LuauExecutionTaskResponse {
     pub path: String,
-    pub createTime: Option<String>,
-    pub updateTime: Option<String>,
+    pub create_time: Option<String>,
+    pub update_time: Option<String>,
     pub user: String,
     pub state: LuauExecutionTaskState,
     pub script: String,
     pub timeout: Option<String>,
     pub error: Option<LuauExecutionTaskError>,
     pub output: Option<LuauExecutionTaskOutput>,
-    pub binaryInput: String,
-    pub enableBinaryOutput: bool,
-    pub binaryOutputUri: Option<String>,
+    pub binary_input: String,
+    pub enable_binary_output: bool,
+    pub binary_output_uri: Option<String>,
 }
