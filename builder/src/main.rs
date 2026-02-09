@@ -79,7 +79,7 @@ fn build_sandboxer_dom() -> WeakDom {
 
     dom
 }
-fn build_test_rbxm(mut latest_rbxm: WeakDom) -> Vec<u8> {
+fn build_test_rbxm(latest_rbxm: WeakDom) -> Vec<u8> {
     let init_source = read_source("./builder/src/luau/init.luau");
     let testframework_source = read_source("./builder/src/luau/TestFramework.luau");
 
@@ -120,7 +120,8 @@ fn build_test_rbxm(mut latest_rbxm: WeakDom) -> Vec<u8> {
 
     let root = dom.root_ref();
     // transfer the Sandboxer module tree into the new dom (keeps same behavior)
-    latest_rbxm.transfer(latest_rbxm.root().children()[0], &mut dom, root);
+    let sandbox_root = latest_rbxm.clone_into_external(latest_rbxm.root_ref(), &mut dom);
+    dom.transfer_within(sandbox_root, root);
 
     // guesstimate 64 KB
     let mut buf = Vec::with_capacity(64 * 1000);
@@ -179,6 +180,7 @@ fn spawn_task(cli: &Client, api_key: &str, binary_path: String) -> LuauExecution
         .expect("Failed to parse response")
 }
 
+const MAX_POLL_DELAY: Duration = Duration::from_secs(30);
 fn poll_task_state(cli: &Client, api_key: &str, id: &str) -> LuauExecutionTaskResponse {
     let state_req = cli
         .get(format!("https://apis.roblox.com/cloud/v2/{id}"))
@@ -203,7 +205,7 @@ fn poll_task_state(cli: &Client, api_key: &str, id: &str) -> LuauExecutionTaskRe
         }
 
         sleep(delay);
-        delay *= 2;
+        delay = delay.max(MAX_POLL_DELAY);
     }
 }
 

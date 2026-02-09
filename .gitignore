@@ -1,4 +1,4 @@
 **/target
-**/Cargo.lock
 Sandboxer.rbxm
 test.rbxm
+*/**/Cargo.lock
