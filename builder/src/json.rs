@@ -115,5 +115,6 @@ pub struct LuauExecutionTaskResponse {
     pub output: Option<LuauExecutionTaskOutput>,
     pub binary_input: String,
     pub enable_binary_output: bool,
-    pub binary_output_uri: Option<String>,
+    #[serde(rename = "binaryOutputUri")]
+    pub binary_output_url: Option<String>,
 }
