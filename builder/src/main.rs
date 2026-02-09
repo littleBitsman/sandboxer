@@ -41,6 +41,7 @@ fn read_source<P: AsRef<str>>(path: P) -> String {
     read_to_string(path.as_ref()).unwrap_or_else(|_| panic!("Failed to read {}", path.as_ref()))
 }
 
+#[inline(always)]
 fn build_license() -> String {
     let license = read_source("LICENSE");
     let mut final_license = String::with_capacity(license.len() + 80);
@@ -52,6 +53,7 @@ fn build_license() -> String {
     final_license
 }
 
+#[inline(always)]
 fn build_sandboxer_dom() -> WeakDom {
     let license = build_license();
 
@@ -79,6 +81,8 @@ fn build_sandboxer_dom() -> WeakDom {
 
     dom
 }
+
+#[inline(always)]
 fn build_test_rbxm(latest_rbxm: WeakDom) -> Vec<u8> {
     let init_source = read_source("./builder/src/luau/init.luau");
     let testframework_source = read_source("./builder/src/luau/TestFramework.luau");
@@ -138,6 +142,7 @@ fn build_test_rbxm(latest_rbxm: WeakDom) -> Vec<u8> {
     buf
 }
 
+#[inline(always)]
 fn upload_binary(cli: &Client, api_key: &str, buf: &[u8]) -> LuauExecutionBinaryInputResponse {
     info!("Uploading test binary...");
     let binput = cli
@@ -147,8 +152,13 @@ fn upload_binary(cli: &Client, api_key: &str, buf: &[u8]) -> LuauExecutionBinary
         .send()
         .expect("Create binary input request failed")
         .error_for_status()
-        .expect("Error while creating Luau execution binary input")
-        .json::<LuauExecutionBinaryInputResponse>()
+        .unwrap_or_else(|e| {
+            let e = e.without_url();
+            match e.status() {
+                Some(status) => panic!("Create binary input request failed with HTTP {status}"),
+                None => panic!("Create binary input request failed: {e}"),
+            }
+        }).json::<LuauExecutionBinaryInputResponse>()
         .expect("Failed to parse response");
 
     cli.put(&binput.uploadUri)
@@ -162,6 +172,7 @@ fn upload_binary(cli: &Client, api_key: &str, buf: &[u8]) -> LuauExecutionBinary
     binput
 }
 
+#[inline(always)]
 fn spawn_task(cli: &Client, api_key: &str, binary_path: String) -> LuauExecutionTaskResponse {
     cli
         .post("https://apis.roblox.com/cloud/v2/universes/8382727792/places/122953816609099/luau-execution-session-tasks")
@@ -181,6 +192,7 @@ fn spawn_task(cli: &Client, api_key: &str, binary_path: String) -> LuauExecution
 }
 
 const MAX_POLL_DELAY: Duration = Duration::from_secs(30);
+#[inline(always)]
 fn poll_task_state(cli: &Client, api_key: &str, id: &str) -> LuauExecutionTaskResponse {
     let state_req = cli
         .get(format!("https://apis.roblox.com/cloud/v2/{id}"))
@@ -209,6 +221,7 @@ fn poll_task_state(cli: &Client, api_key: &str, id: &str) -> LuauExecutionTaskRe
     }
 }
 
+#[inline(always)]
 fn stream_and_print_logs(cli: &Client, api_key: &str, id: &str) {
     let mut page_token = String::with_capacity(24);
 
@@ -225,7 +238,7 @@ fn stream_and_print_logs(cli: &Client, api_key: &str, id: &str) {
             .error_for_status()
             .expect("Error while fetching Luau execution session logs")
             .json::<LuauExecutionTaskLogsResponse>()
-            .expect("Failed to read logs response");
+            .expect("Failed to parse Luau execution logs");
 
         for log in logs_resp.luauExecutionSessionTaskLogs {
             for entry in log.structuredMessages {
@@ -323,6 +336,7 @@ mod tests {
         debug!("debugging");
 
         debug!("Done, {}, stuff after", fmt!(RED BOLD => "Hello!"));
+        fprint!(time = fmt!(RED BOLD UNDERLINE => "Bruh this is DEFINITELY not a time"); "Bruh.");
         // std::panic::set_hook(Box::new(|_| std::process::exit(101)));
         panic!("BRuh");
     }
