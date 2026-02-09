@@ -31,13 +31,10 @@ jobs:
           target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - name: Build RBXM
-      run: cargo run --release --bin sandboxer-rbxm-builder
-
     # the binary runs tests using Luau execution sessions
     # this doesn't have much output otherwise
-    - name: Run tests
-      run: cargo run --release --bin sandboxer-rblx-tests
+    - name: Build RBXM & Test
+      run: cargo run --release
       env: 
         ROBLOX_API_KEY: ${{ secrets.ROBLOX_API_KEY }}
 

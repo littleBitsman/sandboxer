@@ -1,7 +1,0 @@
-build
-
-# Added by cargo
-
-**/target
-**/Cargo.lock
-examples
