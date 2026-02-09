@@ -107,7 +107,7 @@ function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, f
 		for k, val in v do
 			local wrappedKey = InstanceSandboxer.deepWrap(k, nil, k, freeze, visited)
 			local wrappedVal = InstanceSandboxer.deepWrap(val, nil, k, freeze, visited)
-			if typeof(k) == "number" and math.floor(k) == k and k >= 0 then
+			if typeof(k) == "number" and math.floor(k) == k and k > 0 then
 				table.insert(numerics, {
 					key = wrappedKey,
 					val = wrappedVal
