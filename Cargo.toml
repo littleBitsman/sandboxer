@@ -1,4 +1,4 @@
 [workspace]
 resolver = "3"
-members = ["builder"]
+members = ["builder", "examples/validate-code"]
 default-members = ["builder"]
