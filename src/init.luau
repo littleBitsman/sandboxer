@@ -204,12 +204,7 @@ local SANDBOX_CONFIG: { [string]: any } = {}
 	This will also allow you to overwrite already sandboxed globals, such as `game`.
 	
 	The sandboxer will make **no attempt** to secure custom functions, so use them
-	at your own risk. The only change that will occur is that if the function returns
-	`Instance`s, they will be wrapped, and if wrapped `Instance`s are passed to the
-	function, they will be unwrapped.
-
-	Do note that the environment table passed to `setfenv` does NOT have a metatable,
-	unlike Roblox's default environment. 
+	at your own risk.  
 
 	The function will return `true` if the operation was completely successful
 	(i.e., all values were set on the configuration table) and `false` if any 
@@ -324,9 +319,6 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 
 	-- Big boi
 	local fenv = {
-		_G = self_G,
-		shared = self_G,
-
 		game = GAME_SANDBOXED,
 		Game = GAME_SANDBOXED,
 		workspace = WORKSPACE_SANDBOXED,
@@ -436,16 +428,14 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		if value == false then
 			fenv[key] = nil
 		else
-			fenv[key] = InstanceSandboxer.deepWrap(value)
+			fenv[key] = value
 		end
 	end
 
-	setmetatable(fenv, {
-		__metatable = IS_SANDBOXED_REF
-	})
-
 	-- The end yay
-	setfenv(fn, fenv :: any)
+	setfenv(fn, setmetatable({ _G = self_G, shared = self_G }, {
+		__metatable = IS_SANDBOXED_REF
+	}) :: any)
 end
 
 --[=[
