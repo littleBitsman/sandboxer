@@ -31,9 +31,115 @@ debug.setmemorycategory("Sandboxer")
 ]=]
 local InstanceSandboxer = {}
 
+local Config = require("./Config")
 local InstanceList = require("./InstanceList")
 local WRAPPED, UNWRAP = InstanceList.WRAPPED, InstanceList.UNWRAP
 local WRAPPED_SIGNALS, UNWRAP_SIGNALS = InstanceList.WRAPPED_SIGNALS, InstanceList.UNWRAP_SIGNALS
+
+--[=[
+	@within InstanceSandboxer
+	@prop Instances { [Instance]: true }
+	@readonly
+
+	A set of all `Instance`s that have been accessed in the sandbox, 
+	including those that were created by the sandbox and those that were not. 
+	This is used for tracking all `Instance`s that may have been modified by 
+	sandboxed code, so that they can be cleaned up or handled differently if necessary.
+
+	When `Config.TrackInstances` is enabled, any `Instance` that is accessed 
+	in the sandbox will be added here. Keep in mind newly-created `Instance`s 
+	will be added here as well, so this will also include all `Instance`s in 
+	`InstanceSandboxer.NewInstances`, unless they were forbidden.
+
+	To iterate through these `Instance`s and clear them, you can do something like this:
+
+	```lua
+	for inst in InstanceSandboxer.Instances do
+		-- Your cleanup code here, such as:
+		inst:Destroy()
+	end
+
+	-- Instances get GC'd once destroyed, so this 
+	-- is sufficient for cleanup in most cases, 
+	-- but you can also do:
+	table.clear(InstanceSandboxer.Instances)
+	```
+]=]
+InstanceSandboxer.Instances = setmetatable({} :: any, { __mode = "k" }) :: { [Instance]: true }
+local function attemptAddInstance(inst)
+	if Config.TrackInstances then
+		InstanceSandboxer.Instances[inst] = true
+	end
+	return inst :: typeof(inst)
+end
+
+--[=[
+	@within InstanceSandboxer
+	@prop NewInstances { [Instance]: true }
+	@readonly
+
+	A set of `Instance`s that have been created in the sandbox.
+	This is used for tracking Instances that were created by 
+	sandboxed code, so that they can be cleaned up or handled 
+	differently if necessary.
+
+	When `Config.TrackInstances` is enabled, any `Instance` that is created
+	will be added here. Keep in mind these will **also** be added to 
+	`InstanceSandboxer.Instances`, since they are also accessed in the sandbox,
+	unless they were forbidden.
+
+	To iterate through these `Instance`s and clear them, you can do something like this:
+
+	```lua
+	for inst in InstanceSandboxer.NewInstances do
+		-- Your cleanup code here, such as:
+		inst:Destroy()
+	end
+
+	-- Instances get GC'd once destroyed, so this 
+	-- is sufficient for cleanup in most cases, 
+	-- but you can also do:
+	table.clear(InstanceSandboxer.NewInstances)
+	```
+]=]
+InstanceSandboxer.NewInstances = setmetatable({} :: any, { __mode = "k" }) :: { [Instance]: true }
+local function attemptAddNewInstance(inst)
+	if Config.TrackInstances then
+		InstanceSandboxer.NewInstances[inst] = true
+	end
+	return inst :: typeof(inst)
+end
+
+--[=[
+	@within InstanceSandboxer
+	@prop RBXScriptConnections { [RBXScriptConnection]: true }
+	@readonly
+
+	A set of `RBXScriptConnection`s that have been created by the sandbox. 
+	This is used for tracking connections so that they can be cleaned up
+	when necessary. This will only be populated if and only if
+	`Config.TrackRBXScriptConnections` is enabled.
+
+	To iterate through these connections and clear them, you can do something like this:
+
+	```lua
+	for conn in InstanceSandboxer.RBXScriptConnections do
+		conn:Disconnect()
+	end
+
+	-- RBXScriptConnections get GC'd once disconnected,
+	-- so this is sufficient for cleanup in most cases, 
+	-- but you can also do:
+	table.clear(InstanceSandboxer.RBXScriptConnections)
+	```
+]=]
+InstanceSandboxer.RBXScriptConnections = setmetatable({} :: any, { __mode = "k" }) :: { [RBXScriptConnection]: true }
+local function attemptAddConnection(conn: RBXScriptConnection): RBXScriptConnection
+	if Config.TrackRBXScriptConnections then
+		InstanceSandboxer.RBXScriptConnections[conn] = true
+	end
+	return conn
+end
 
 -- Thank you Luau, very cool! (WHY DOES TYPE CHECKER MAKE ME DO THIS BROOOOOOOOOOOOO)
 InstanceSandboxer.deepUnwrap = nil :: any
@@ -297,7 +403,9 @@ end
 	@type MetamethodHook (inst: any, fn: (Instance, ...any) -> ...any, ...any) -> ...any
 
 	Type for metamethod hook functions.
-	First argument is the original metamethod function that can be called. **This function expects an unwrapped `Instance` as its first argument.**
+	First argument is the original metamethod function that can be called. 
+	**This function expects an unwrapped `Instance` as its first argument.**
+	
 	Second argument is the wrapped `Instance`.
 	Remaining arguments are the arguments passed to the metamethod at invocation.
 ]=]
@@ -524,18 +632,18 @@ local SIGNAL_WRAPPER = {
 		local signal = InstanceSandboxer.unwrap(self) :: RBXScriptSignal
 		InstanceSandboxer.requireType(signal, "RBXScriptSignal", `invalid argument #1 to 'Connect' (RBXScriptSignal expected, got {InstanceSandboxer.typeof(self)}`)
 		InstanceSandboxer.requireType(cb, "function", "Attempt to connect failed: Passed value is not a function")
-		return signal:Connect(function(...)
+		return attemptAddConnection(signal:Connect(function(...)
 			cb(InstanceSandboxer.wrapArgs(...))
-		end)
+		end))
 	end,
 	Once = function(...)
 		local self: any, cb: (...any) -> () = InstanceSandboxer.requireArguments(1, "Once", {"RBXScriptSignal"}, ...)
 		local signal = InstanceSandboxer.unwrap(self) :: RBXScriptSignal
 		InstanceSandboxer.requireType(signal, "RBXScriptSignal", `invalid argument #1 to 'Once' (RBXScriptSignal expected, got {InstanceSandboxer.typeof(self)}`)
 		InstanceSandboxer.requireType(cb, "function", "Attempt to connect failed: Passed value is not a function")
-		return signal:Once(function(...)
+		return attemptAddConnection(signal:Once(function(...)
 			cb(InstanceSandboxer.wrapArgs(...))
-		end)
+		end))
 	end,
 	Wait = function(...)
 		local self: any = InstanceSandboxer.requireArguments(1, "Wait", {"RBXScriptSignal"}, ...)
@@ -548,9 +656,9 @@ local SIGNAL_WRAPPER = {
 		local signal = InstanceSandboxer.unwrap(self) :: RBXScriptSignal
 		InstanceSandboxer.requireType(signal, "RBXScriptSignal", `invalid argument #1 to 'ConnectParallel' (RBXScriptSignal expected, got {InstanceSandboxer.typeof(self)}`)
 		InstanceSandboxer.requireType(cb, "function", "Attempt to connect failed: Passed value is not a function")
-		return signal:ConnectParallel(function(...)
+		return attemptAddConnection(signal:ConnectParallel(function(...)
 			cb(InstanceSandboxer.wrapArgs(...))
-		end)
+		end))
 	end
 }
 -- Support legacy names
@@ -614,8 +722,11 @@ end
 	@param instance Instance -- The `Instance` to wrap.
 	@return any -- The wrapped `Instance`.
 ]=]
-function InstanceSandboxer.wrapInstance(instance: Instance): any?
+function InstanceSandboxer.wrapInstance(instance: Instance, fromInstanceConstructor: boolean?): any?
 	if not instance or not InstanceList.instanceAllowed(instance) then
+		if instance and fromInstanceConstructor then
+			instance:Destroy() -- clears an unused instance
+		end
 		return nil
 	end
 
@@ -623,6 +734,7 @@ function InstanceSandboxer.wrapInstance(instance: Instance): any?
 		return WRAPPED[instance]
 	end
 
+	attemptAddInstance(instance)
 	local proxy = newproxy(true)
 	local mt = getmetatable(proxy)
 
@@ -672,7 +784,7 @@ METHOD_CACHE[Instance.new] = function(...: string | Instance): any
 		InstanceSandboxer.requireType(p, "Instance", `invalid argument #2 to 'new' (Instance expected, got {InstanceSandboxer.typeof(parent)}`)
 	end
 
-	return InstanceSandboxer.wrapInstance(Instance.new(class, p))
+	return InstanceSandboxer.wrapInstance(attemptAddNewInstance(Instance.new(class, p)), true)
 end
 METHOD_CACHE[Instance.fromExisting] = function(...: Instance)
 	local wrappedInstance = InstanceSandboxer.requireArguments(1, "fromExisting", {"Instance"}, ...)	
@@ -681,7 +793,7 @@ METHOD_CACHE[Instance.fromExisting] = function(...: Instance)
 	if table.find(InstanceList.DisallowedClasses, inst.ClassName) then
 		return nil
 	end
-	return InstanceSandboxer.wrapInstance(Instance.fromExisting(inst))
+	return InstanceSandboxer.wrapInstance(attemptAddNewInstance(Instance.fromExisting(inst)), true)
 end
 
 -- Make all native libraries have pass-throughs for functions.
@@ -796,4 +908,4 @@ end
 
 InstanceSandboxer.METHOD_CACHE = METHOD_CACHE
 
-return InstanceSandboxer
+return table.freeze(InstanceSandboxer)

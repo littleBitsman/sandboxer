@@ -60,6 +60,7 @@ fn build_sandboxer_dom() -> WeakDom {
     let sandboxer_source = read_source("./src/init.luau");
     let instancelist_source = read_source("./src/InstanceList.luau");
     let instancesandboxer_source = read_source("./src/InstanceSandboxer.luau");
+    let config_source = read_source("./src/Config.luau");
 
     let dom = WeakDom::new(
         InstanceBuilder::with_property_capacity("ModuleScript", 1)
@@ -68,6 +69,7 @@ fn build_sandboxer_dom() -> WeakDom {
             .with_children([
                 module_script_with_source("InstanceList", instancelist_source),
                 module_script_with_source("InstanceSandboxer", instancesandboxer_source),
+                module_script_with_source("Config", config_source),
                 module_script_with_source("LICENSE", license),
             ]),
     );
