@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocs=self.webpackChunkdocs||[]).push([[98],{4410:s=>{s.exports=JSON.parse('{"sourceUrl":"https://github.com/littleBitsman/sandboxer/blob/main","baseUrl":"/sandboxer/","classOrder":["Sandboxer","InstanceSandboxer","InstanceList","Config"],"apiCategories":[]}')}}]);
