@@ -434,6 +434,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 
 	-- The end yay
 	setfenv(fn, setmetatable({ _G = self_G, shared = self_G }, {
+		__index = fenv,
 		__metatable = IS_SANDBOXED_REF
 	}) :: any)
 end
