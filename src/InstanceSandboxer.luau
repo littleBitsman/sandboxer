@@ -49,7 +49,9 @@ local WRAPPED_SIGNALS, UNWRAP_SIGNALS = InstanceList.WRAPPED_SIGNALS, InstanceLi
 	When `Config.TrackInstances` is enabled, any `Instance` that is accessed 
 	in the sandbox will be added here. Keep in mind newly-created `Instance`s 
 	will be added here as well, so this will also include all `Instance`s in 
-	`InstanceSandboxer.NewInstances`, unless they were forbidden.
+	`InstanceSandboxer.NewInstances`. New `Instance`s that were created and
+	were found to be forbidden via `InstanceList.ForbiddenClasses` will not 
+	be added to this set.
 
 	To iterate through these `Instance`s and clear them, you can do something like this:
 
@@ -66,12 +68,6 @@ local WRAPPED_SIGNALS, UNWRAP_SIGNALS = InstanceList.WRAPPED_SIGNALS, InstanceLi
 	```
 ]=]
 InstanceSandboxer.Instances = setmetatable({} :: any, { __mode = "k" }) :: { [Instance]: true }
-local function attemptAddInstance(inst)
-	if Config.TrackInstances then
-		InstanceSandboxer.Instances[inst] = true
-	end
-	return inst :: typeof(inst)
-end
 
 --[=[
 	@within InstanceSandboxer
@@ -85,8 +81,7 @@ end
 
 	When `Config.TrackInstances` is enabled, any `Instance` that is created
 	will be added here. Keep in mind these will **also** be added to 
-	`InstanceSandboxer.Instances`, since they are also accessed in the sandbox,
-	unless they were forbidden.
+	`InstanceSandboxer.Instances`, since they are also accessed in the sandbox.
 
 	To iterate through these `Instance`s and clear them, you can do something like this:
 
@@ -103,9 +98,13 @@ end
 	```
 ]=]
 InstanceSandboxer.NewInstances = setmetatable({} :: any, { __mode = "k" }) :: { [Instance]: true }
-local function attemptAddNewInstance(inst)
+
+local function attemptAddInstance(inst, fromInstanceConstructor: boolean?): Instance
 	if Config.TrackInstances then
-		InstanceSandboxer.NewInstances[inst] = true
+		InstanceSandboxer.Instances[inst] = true
+		if fromInstanceConstructor then
+			InstanceSandboxer.NewInstances[inst] = true
+		end
 	end
 	return inst :: typeof(inst)
 end
@@ -734,7 +733,7 @@ function InstanceSandboxer.wrapInstance(instance: Instance, fromInstanceConstruc
 		return WRAPPED[instance]
 	end
 
-	attemptAddInstance(instance)
+	attemptAddInstance(instance, fromInstanceConstructor)
 	local proxy = newproxy(true)
 	local mt = getmetatable(proxy)
 
@@ -784,7 +783,7 @@ METHOD_CACHE[Instance.new] = function(...: string | Instance): any
 		InstanceSandboxer.requireType(p, "Instance", `invalid argument #2 to 'new' (Instance expected, got {InstanceSandboxer.typeof(parent)}`)
 	end
 
-	return InstanceSandboxer.wrapInstance(attemptAddNewInstance(Instance.new(class, p)), true)
+	return InstanceSandboxer.wrapInstance(Instance.new(class, p), true)
 end
 METHOD_CACHE[Instance.fromExisting] = function(...: Instance)
 	local wrappedInstance = InstanceSandboxer.requireArguments(1, "fromExisting", {"Instance"}, ...)	
@@ -793,7 +792,7 @@ METHOD_CACHE[Instance.fromExisting] = function(...: Instance)
 	if table.find(InstanceList.DisallowedClasses, inst.ClassName) then
 		return nil
 	end
-	return InstanceSandboxer.wrapInstance(attemptAddNewInstance(Instance.fromExisting(inst)), true)
+	return InstanceSandboxer.wrapInstance(Instance.fromExisting(inst), true)
 end
 
 -- Make all native libraries have pass-throughs for functions.
