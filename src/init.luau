@@ -473,6 +473,8 @@ end
 
 Sandboxer.typeof = InstanceSandboxer.typeof
 Sandboxer.InstanceList = InstanceList
+Sandboxer.InstanceSandboxer = InstanceSandboxer
+Sandboxer.Config = require("@self/Config")
 
 -- allow HttpService methods like GenerateGUID and JSON functions, but disallow network with hooks
 do
