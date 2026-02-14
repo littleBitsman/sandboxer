@@ -55,29 +55,16 @@ local version, elapsedTime do
 	elapsedTime = {fenv.elapsedTime, fenv.ElapsedTime}
 end
 
-function _fprint(...: any)
-	print("[SANDBOX SECURITY]", ...)
-end
-function fwarn(...: any)
-	warn("[SANDBOX SECURITY]", ...)
-end
-function _ferror(msg: string, level: number?)
-	error("[SANDBOX SECURITY]" .. msg, level or 0)
-end
-function _fassert(expr: any, msg: string?)
-	assert(expr, "[SANDBOX SECURITY]" .. (msg or "assertion failed!"))
-end
-
-function nope(): never
+local function nope(): never
 	error("nuh uh", 0)
 end
 
-function xpcallIsBad(...: any): never
+local function xpcallIsBad(...: any): never
 	error("xpcall is disabled, use pcall instead", 2)
 end
 
 local STRING_RESOLVER_PATTERN = "([^/]+)/?"
-function ResolveStringPath(mod: Instance, str: string): Instance?
+local function ResolveStringPath(mod: Instance, str: string): Instance?
 	local iter = str:gmatch(STRING_RESOLVER_PATTERN)
 	local currentInstance: Instance? do
 		local first = iter()
@@ -108,7 +95,7 @@ end
 
 local realrequire = require
 -- The real caller is level 3 (1 = SafeRequire, 2 = _require, 3 = caller of _require)
-function SafeRequire(module: (Instance | string | number)?, caller: Instance): any
+local function SafeRequire(module: (Instance | string | number)?, caller: Instance): any
 	if typeof(module) == "string" then
 		if not caller then
 			error(`Unable to require module from given path '{module}'`, 3)
@@ -127,7 +114,7 @@ function SafeRequire(module: (Instance | string | number)?, caller: Instance): a
 end
 
 -- Returns highest available environment, and its level relative to this function's caller.
-function GetHighestEnv(): ({ [string]: any }, number)
+local function GetHighestEnv(): ({ [string]: any }, number, (...any) -> ...any)
 	local i = 0
 	while true do
 		local ok, env = pcall(getfenv, i)
@@ -136,37 +123,8 @@ function GetHighestEnv(): ({ [string]: any }, number)
 		end
 		i += 1
 	end
-	return getfenv(i - 2), i - 3
-end
-
--- I honestly have no idea why i wrote this lol
-function _hahano()
-	local Env, Level = GetHighestEnv()
-	local CallingScriptWrapped: any = Env.script
-	local CallingScript: BaseScript
-
-	if InstanceSandboxer.isWrapped(CallingScriptWrapped) then
-		CallingScript = InstanceSandboxer.unwrap(CallingScriptWrapped) :: any
-	elseif typeof(CallingScriptWrapped) == "Instance" then
-		CallingScript = CallingScriptWrapped :: any
-	else
-		fwarn("SANDBOX BREACH DETECTED FROM UNKNOWN SCRIPT !!")
-		nope()
-	end
-
-	-- Log info for auditing
-	fwarn("SANDBOX BREACH:", CallingScript:GetFullName())
-
-	-- Clear environment
-	setfenv(Level, {})
-
-	-- Try to disable and destroy safely
-	pcall(function()
-		CallingScript.Enabled = false
-		CallingScript:Destroy()
-	end)
-
-	nope()
+	local fn = debug.info(i - 2, "f")
+	return getfenv(fn), i - 3, fn
 end
 
 local ForbiddenGlobals: { [any]: boolean } = {
