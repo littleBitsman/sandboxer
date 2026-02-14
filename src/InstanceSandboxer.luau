@@ -433,7 +433,7 @@ local DEFAULT_METATABLE = {} do
 
 		if not success then
 			-- value contains the error message
-			error(tostring(value), 2)
+			error(tostring(value), 3)
 			--error(`{key} is not a valid member of {inst.ClassName} "{inst.Name}"`, 2)
 		end
 		-- Functionality replaced by metamethod hooks
@@ -463,8 +463,7 @@ local DEFAULT_METATABLE = {} do
 		value = InstanceSandboxer.deepUnwrap(value)
 		local success, rawerr: string? = pcall(set, inst, key, value)
 		if not success then
-			local err = tostring(rawerr) or ""
-			error(err, 2)
+			error(tostring(rawerr), 3)
 			--[[
 			if err:find("not a valid member") then
 				error(`{key} is not a valid member of {inst.ClassName} "{inst.Name}"`, 2)
@@ -513,7 +512,7 @@ local DEFAULT_METATABLE = {} do
 	end
 
 	local function internalCall(internalSelf: any, ...: any): never
-		error(`attempt to call a {InstanceSandboxer.typeof(internalSelf)} value`, 2)
+		error(`attempt to call a {InstanceSandboxer.typeof(internalSelf)} value`, 3)
 	end
 	DEFAULT_METATABLE.__call = function(self, ...)
 		local internalSelf = check(self)
@@ -527,7 +526,7 @@ local DEFAULT_METATABLE = {} do
 	end
 
 	local function internalConcat(internalSelf: any, v: any): never
-		error(`attempt to concatenate {InstanceSandboxer.typeof(internalSelf)} with {InstanceSandboxer.typeof(v)}`, 2)
+		error(`attempt to concatenate {InstanceSandboxer.typeof(internalSelf)} with {InstanceSandboxer.typeof(v)}`, 3)
 	end
 	DEFAULT_METATABLE.__concat = function(self, v)
 		local internalSelf = check(self)
@@ -545,7 +544,7 @@ local DEFAULT_METATABLE = {} do
 		local function internalMath(internalSelf: any, rhs: any): never
 			error(`attempt to perform arithmetic ({math}) on {InstanceSandboxer.typeof(internalSelf)}` 
 				.. (InstanceSandboxer.typeof(rhs) ~= "Instance" and ` and {InstanceSandboxer.typeof(rhs)}` or ""), 
-				2
+				3
 			)
 		end
 		DEFAULT_METATABLE[mtName] = function(self, rhs)
@@ -563,7 +562,7 @@ local DEFAULT_METATABLE = {} do
 	local function internalLt(lhs: any, rhs: any): never
 		error(
 			`attempt to compare {InstanceSandboxer.typeof(lhs)} < {InstanceSandboxer.typeof(rhs)}`,
-			2
+			3
 		)
 	end
 	DEFAULT_METATABLE.__lt = function(lhs, rhs)
@@ -580,7 +579,7 @@ local DEFAULT_METATABLE = {} do
 	local function internalLe(lhs: any, rhs: any): never
 		error(
 			`attempt to compare {InstanceSandboxer.typeof(lhs)} <= {InstanceSandboxer.typeof(rhs)}`,
-			2
+			3
 		)
 	end
 	DEFAULT_METATABLE.__le = function(lhs, rhs)
@@ -595,7 +594,7 @@ local DEFAULT_METATABLE = {} do
 	end
 
 	local function internalLen(self: any): never
-		error(`attempt to get length of a {InstanceSandboxer.typeof(self)} value`, 2)
+		error(`attempt to get length of a {InstanceSandboxer.typeof(self)} value`, 3)
 	end
 	DEFAULT_METATABLE.__len = function(self)
 		local internalSelf = check(self)
@@ -609,7 +608,7 @@ local DEFAULT_METATABLE = {} do
 	end
 	
 	local function internalIter(self: any): never
-		error(`attempt to iterate over a {InstanceSandboxer.typeof(self)} value`, 2)
+		error(`attempt to iterate over a {InstanceSandboxer.typeof(self)} value`, 3)
 	end
 	DEFAULT_METATABLE.__iter = function(self)
 		local internalSelf = check(self)
