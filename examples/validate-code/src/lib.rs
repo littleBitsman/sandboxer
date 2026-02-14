@@ -41,7 +41,8 @@ fn is_valid_script(source: &str) -> bool {
         } else if l.contains("]]") && in_block_comment {
             in_block_comment = false;
             continue;
-        } else if in_block_comment || l.starts_with("--") || l.starts_with("--!") {
+        } else if in_block_comment || l.starts_with("--") {
+            // `--!` is handled by `--`
             continue;
         } else if l.starts_with(SANDBOX_INITIALIZER) && !in_block_comment {
             return true;
