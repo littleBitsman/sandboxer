@@ -472,8 +472,32 @@ function Sandboxer:SandboxString(src: string, chunkname: string): InstanceSandbo
 end
 
 Sandboxer.typeof = InstanceSandboxer.typeof
-Sandboxer.InstanceList = InstanceList
+
+--[=[
+	@within Sandboxer
+	@prop InstanceSandboxer typeof(InstanceSandboxer)
+	@readonly
+
+	A reference to the [`InstanceSandboxer` class](InstanceSandboxer).
+]=]
 Sandboxer.InstanceSandboxer = InstanceSandboxer
+
+--[=[
+	@within Sandboxer
+	@prop InstanceList typeof(InstanceList)
+	@readonly
+
+	A reference to the [`InstanceList` class](InstanceList).
+]=]
+Sandboxer.InstanceList = InstanceList
+
+--[=[
+	@within Sandboxer
+	@prop Config typeof(Config)
+	@readonly
+
+	A reference to the [`Config`](Config).
+]=]
 Sandboxer.Config = require("@self/Config")
 
 -- allow HttpService methods like GenerateGUID and JSON functions, but disallow network with hooks
