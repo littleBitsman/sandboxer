@@ -356,7 +356,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		Faces = Faces,
 		FloatCurveKey = FloatCurveKey,
 		Font = Font,
-		Instance = InstanceSandboxer.deepWrap(Instance, nil, nil, true), -- wrapped using a lil trick with METHOD_CACHE
+		Instance = InstanceSandboxer.InstanceGlobal,
 		NumberRange = NumberRange,
 		NumberSequence = NumberSequence,
 		NumberSequenceKeypoint = NumberSequenceKeypoint,
