@@ -47,12 +47,12 @@ local LOADSTRING_ENABLED = pcall(loadstring, "return nil")
 
 -- Thank you roblox, very cool! (deprecation warnings - WHO CARES)
 local getfenv, setfenv = getfenv, setfenv
+local _ENV = getfenv(0)
 local version, elapsedTime do
 	-- little hack to make these not be annoying
-	local fenv = getfenv(0)
 
-	version = {fenv.version, fenv.Version}
-	elapsedTime = {fenv.elapsedTime, fenv.ElapsedTime}
+	version = {_ENV.version, _ENV.Version}
+	elapsedTime = {_ENV.elapsedTime, _ENV.ElapsedTime}
 end
 
 local function nope(): never
@@ -225,6 +225,7 @@ end
 	A separate table is created for `_G` / `shared`
 ]=]
 function Sandboxer:Init()	
+	setfenv(0, _ENV) -- just in case something tampered with it; setfenv is localized
 	local CallingFenv, LEVEL = GetHighestEnv()
 	if getmetatable(CallingFenv :: any) == IS_SANDBOXED_REF then
 		return
@@ -250,6 +251,7 @@ end
 	@error "level must be at least 1" -- If fnOrLevel is a number, it must be at least 1.
 ]=]
 function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
+	setfenv(0, _ENV) -- just in case something tampered with it; setfenv is localized
 	local fn
 	if typeof(fnOrLevel) == "number" then
 		assert(fnOrLevel >= 1, "level must be at least 1")
@@ -410,6 +412,7 @@ end
 	@error "loadstring() is not available" -- ServerScriptService.LoadStringEnabled was false.
 ]=]
 function Sandboxer:SandboxString(src: string, chunkname: string): InstanceSandboxer.AnyFn
+	setfenv(0, _ENV) -- just in case something tampered with it; setfenv is localized
 	if LOADSTRING_ENABLED then
 		local success, fn: InstanceSandboxer.AnyFn?, luaError: string? = pcall(loadstring, src, chunkname)
 
