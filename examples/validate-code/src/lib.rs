@@ -35,19 +35,20 @@ fn is_valid_script(source: &str) -> bool {
         let l = l.trim();
         if l.is_empty() {
             continue;
-        } else if l.starts_with("--[[") {
+        }
+        if l.starts_with("--[[") {
             in_block_comment = true;
             continue;
-        } else if l.contains("]]") && in_block_comment {
+        }
+        if l.contains("]]") && in_block_comment {
             in_block_comment = false;
             continue;
-        } else if in_block_comment || l.starts_with("--") {
+        }
+        if in_block_comment || l.starts_with("--") {
             // `--!` is handled by `--`
             continue;
-        } else if l.starts_with(SANDBOX_INITIALIZER) && !in_block_comment {
-            return true;
         }
-        break;
+        return l.starts_with(SANDBOX_INITIALIZER) && !in_block_comment;
     }
     false
 }
@@ -70,7 +71,7 @@ fn validate_file(rbxm: &[u8]) -> Result<(), Error> {
             Err(err) => return Err(Error::DecodeXml(err)),
         }
     } else {
-        return Err(Error::InvalidFile)
+        return Err(Error::InvalidFile);
     };
 
     let scripts = dom.descendants().filter(|desc| {
@@ -195,10 +196,10 @@ mod tests {
 
     #[test]
     fn denies_if_only_comment_lines_present() -> Result<(), ()> {
-        let src = r#"
+        let src = r"
             --[[ nothing here ]]
             -- this is a comment
-        "#;
+        ";
         bool_to_result(!is_valid_script(src))
     }
 

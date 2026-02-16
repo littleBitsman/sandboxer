@@ -15,7 +15,7 @@ mod macros;
 
 use rbx_dom_weak::{InstanceBuilder, WeakDom};
 
-use reqwest::blocking::*;
+use reqwest::blocking::Client;
 
 const SCRIPT: &str = include_str!("main.luau");
 
@@ -85,7 +85,7 @@ fn build_sandboxer_dom() -> WeakDom {
 }
 
 #[inline(always)]
-fn build_test_rbxm(latest_rbxm: WeakDom) -> Vec<u8> {
+fn build_test_rbxm(latest_rbxm: &WeakDom) -> Vec<u8> {
     let init_source = read_source("./builder/src/luau/init.luau");
     let testframework_source = read_source("./builder/src/luau/TestFramework.luau");
 
@@ -230,10 +230,7 @@ fn stream_and_print_logs(cli: &Client, api_key: &str, id: &str) {
     info!("------- Luau Output -------");
     loop {
         let logs_resp = cli
-            .get(format!(
-                "https://apis.roblox.com/cloud/v2/{}/logs?view=STRUCTURED&nextPageToken={}",
-                id, page_token
-            ))
+            .get(format!("https://apis.roblox.com/cloud/v2/{id}/logs?view=STRUCTURED&nextPageToken={page_token}"))
             .header("X-Api-Key", api_key)
             .send()
             .expect("Luau execution session logs request failed")
@@ -254,7 +251,7 @@ fn stream_and_print_logs(cli: &Client, api_key: &str, id: &str) {
                     LogMessageType::Warning => warn!(time = entry.create_time; "{}", entry.message),
                     LogMessageType::Info => info!(time = entry.create_time; "{}", entry.message),
                     LogMessageType::Output => fprint!(time = entry.create_time; "{}", entry.message),
-                    _ => unreachable!(),
+                    LogMessageType::Unspecified => unreachable!(),
                 }
             }
         }
@@ -270,7 +267,7 @@ fn stream_and_print_logs(cli: &Client, api_key: &str, id: &str) {
 fn main() {
     set_panic_hook(Box::new(panic_hook));
 
-    let buf = build_test_rbxm(build_sandboxer_dom());
+    let buf = build_test_rbxm(&build_sandboxer_dom());
 
     let api_key = env("ROBLOX_API_KEY").expect("Missing API key");
 
@@ -298,7 +295,7 @@ fn main() {
 
     if let Some(LuauExecutionTaskOutput { results: [result] }) = result.output {
         let percent = if result.total > 0 {
-            (result.passed as f64 / result.total as f64) * 100.0
+            (f64::from(result.passed) / f64::from(result.total)) * 100.0
         } else {
             100.0
         };
@@ -315,7 +312,7 @@ fn main() {
                 a => fmt!(RED BOLD => "{:.02}", a),
             }
         );
-        process::exit(if result.success { 0 } else { 1 })
+        process::exit(i32::from(!result.success))
     } else {
         panic!("Luau execution session has no output");
     }
@@ -327,7 +324,7 @@ mod tests {
 
     #[cfg(test)]
     #[test]
-    #[should_panic]
+    #[should_panic = "explicit"]
     fn br() {
         set_panic_hook(Box::new(panic_hook));
         fprint!("Hello!");
