@@ -848,7 +848,9 @@ do
 
 	for _, lib in libs do
 		for k, v in lib do
-			METHOD_CACHE[v] = v
+			if typeof(v) == "function" then
+				METHOD_CACHE[v] = v
+			end
 		end
 	end
 end
