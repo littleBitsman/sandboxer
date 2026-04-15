@@ -399,7 +399,7 @@ end
 
 --[=[
 	@within InstanceSandboxer
-	@type MetamethodHook (inst: any, fn: (Instance, ...any) -> ...any, ...any) -> ...any
+	@type MetamethodHook (fn: (Instance, ...any) -> ...any, any, ...any) -> ...any
 
 	Type for metamethod hook functions.
 	First argument is the original metamethod function that can be called. 
