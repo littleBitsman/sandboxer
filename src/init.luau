@@ -56,7 +56,7 @@ local version, elapsedTime do
 end
 
 local function nope(): never
-	error("nuh uh", 0)
+	error("attempt to read missing field", 0)
 end
 
 local function xpcallIsBad(...: any): never
@@ -472,6 +472,32 @@ do
 			end
 		end
 		return oldIndex(HttpService, key)
+	end)
+end
+
+-- disable Players' BanAsync and UnbanAsync by default
+do
+	local Players = game:GetService("Players")
+	InstanceSandboxer.hookMetamethod(Players, "__index", function(oldIndex, self: Instance, key: string)
+		if key == "BanAsync" or key == "UnbanAsync" then
+			return function(...)
+				error(`Players:{key} is disabled`, 2)
+			end
+		end
+		return oldIndex(Players, key)
+	end)
+end
+
+-- disable BadgeService's AwardBadge and AwardBadgeAsync by default
+do
+	local BadgeService = game:GetService("BadgeService")
+	InstanceSandboxer.hookMetamethod(BadgeService, "__index", function(oldIndex, self: Instance, key: string)
+		if key == "AwardBadge" or key == "AwardBadgeAsync" then
+			return function(...)
+				error(`BadgeService:{key} is disabled`, 2)
+			end
+		end
+		return oldIndex(BadgeService, key)
 	end)
 end
 

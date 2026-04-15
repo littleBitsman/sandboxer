@@ -72,7 +72,15 @@ InstanceList.ForbiddenClasses = ForbiddenClasses
 
 -- [Instance]: AllowDescendants (if true, only the specific Instance is blacklisted)
 local ExplicitDisallow: { [Instance]: boolean } = {
-	[game:GetService("Players")] = true
+	[game:GetService("DataStoreService")] = false,
+	[game:GetService("MemoryStoreService")] = false,
+	[game:GetService("MessagingService")] = false,
+	[game:GetService("InsertService")] = false,
+	[game:GetService("TeleportService")] = false,
+	[game:GetService("ExperienceNotificationService")] = false,
+	[game:GetService("AvatarEditorService")] = false,
+	[game:GetService("SocialService")] = false,
+	[game:GetService("MarketplaceService")] = false
 }
 --[=[
 	@within InstanceList
