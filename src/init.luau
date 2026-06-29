@@ -33,11 +33,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	You would have to check if it is the first line of code yourself, using external sources with
 	modules such as [rbx-reader](https://npmjs.org/package/rbx-reader).
 
-	There are a few tags defined on various items across the module. They are as follows:
-	- Basic: Used commonly or are required for generic use and will be used by most users
-	- Customization: Useful for customization
-	- Advanced: Useful for more advanced purposes, will likely *not* be used by most users
-	- Internal: Used internally by the module. Only use if you know what you're doing
+	The various tags used in the API documentation [are defined here](/docs/intro#api-tags).
+
+	**It is highly recommended to read the [Introduction](/docs/intro) before reading the API documentation.**
 ]=]
 local Sandboxer = {}
 
