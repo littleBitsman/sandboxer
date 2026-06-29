@@ -187,6 +187,9 @@ end
 	@param v any -- The value to deeply wrap.
 	@param instance Instance? -- The `Instance` if wrapping one of its properties, methods, or events.
 	@param key string? -- The key of the property, method, or event being wrapped, if applicable.
+	@param freeze boolean? -- Whether to freeze tables.
+	@param pvisited any? -- *Internal parameter, **do not use***.
+	@returns any -- The deeply wrapped value.
 ]=]
 function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, freeze: boolean?, pvisited: { [any]: any }?): any
 	local visited: { [any]: any } = pvisited or {}
@@ -250,6 +253,8 @@ end
 
 	@param v any -- The value to deeply unwrap.
 	@param freeze boolean? -- Whether to freeze tables.
+	@param pvisited any? -- *Internal parameter, **do not use***.
+	@returns any -- The deeply unwrapped value.
 ]=]
 function InstanceSandboxer.deepUnwrap(v: any, freeze: boolean?, pvisited: { [any]: any }?): any
 	local visited: { [any]: any } = pvisited or {}
@@ -718,6 +723,7 @@ end
 	but will return wrapped arguments when accessed.
 
 	@param instance Instance -- The `Instance` to wrap.
+	@param fromInstanceConstructor any? -- *Internal parameter, **do not use***.
 	@return any -- The wrapped `Instance`.
 ]=]
 function InstanceSandboxer.wrapInstance(instance: Instance, fromInstanceConstructor: boolean?): any?
@@ -893,9 +899,31 @@ end
 	- Hooks do not chain; setting a hook for a metamethod that already has one overwrites the previous hook.
 	- Hooks are per-instance, not inherited.
 
+	### Example
+	```lua
+	local TweenService = game:GetService("TweenService")
+	InstanceSandboxer.hookMetamethod(TweenService, "__index", function(originalIndex, wrapped: any, key)
+		if key == "Create" then
+			-- calls __index on TweenService (unwrapped!!)
+			-- will return the wrapped TweenService.Create function
+			local create = originalIndex(game.TweenService, key)
+			return function(self, ...)
+				-- due to Luau syntax desugaring, we must explicitly pass
+				-- self. Calling Something:Func(...) is implicitly the same
+				-- as calling Something.Func(Something, ...)
+				local tween = create(self, ...)
+				print("hello", tween, ...)
+				return tween
+			end
+		else
+			return originalIndex(TweenService, key)
+		end
+	end)
+	```
+
 	@param inst -- **Unwrapped** Instance to hook.
 	@param name -- Metamethod name (with or without `__` prefix) to hook.
-	@param hook -- Callback invoked when the metamethod fires.
+	@param hook -- Callback invoked when the metamethod fires. Recommended to read MetamethodHook documentation for details.
 ]=]
 function InstanceSandboxer.hookMetamethod(inst: Instance, name: Metamethod, hook: MetamethodHook?)
 	-- don't check this with InstanceSandboxer.typeof b/c
