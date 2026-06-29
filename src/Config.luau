@@ -57,4 +57,24 @@ Config.TrackInstances = false
 ]=]
 Config.TrackRBXScriptConnections = false
 
+--[=[
+    @within Config
+    @prop AllowParallelLuau boolean
+    @readonly
+
+    Whether the sandbox will allow Actors (Parallel Luau)
+    to be used in the sandbox.
+
+    When this is `false`, any call to the sandboxer from an
+    Actor will error. Each Actor creates its own instance of
+    this module, so if this is problematic (and it likely will
+    be because of memory usage), set this to `false`. 
+    When this is `true`, the sandboxer will work as expected in 
+    Actors, but it may cause performance issues and increased 
+    memory usage. `task.synchronize()` and `task.desynchronize()` 
+    will work as usual, but errors regarding property sets while
+    in parallel mode might not make sense.
+]=]
+Config.AllowParallelLuau = false
+
 return table.freeze(Config)

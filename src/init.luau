@@ -35,6 +35,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ]=]
 local Sandboxer = {}
 
+--[=[
+	@within Sandboxer
+	@prop Config typeof(Config)
+	@readonly
+
+	A reference to the [`Config`](Config).
+]=]
+Sandboxer.Config = require("@self/Config")
+
 local __METATABLE = "No."
 local InstanceSandboxer = require("@self/InstanceSandboxer")
 local InstanceList = require("@self/InstanceList")
@@ -127,6 +136,19 @@ local function GetHighestEnv(): ({ [string]: any }, number, (...any) -> ...any)
 	return getfenv(fn), i - 3, fn
 end
 
+local function CheckForActor(caller: Script?)
+	local sc: Script?
+	if not caller then
+		sc = GetHighestEnv().script
+	else
+		sc = caller
+	end
+
+	if sc and sc:GetActor() and not Sandboxer.Config.AllowParallelLuau then
+		error("Sandboxer does not allow Actors", 0)
+	end
+end
+
 local ForbiddenGlobals: { [any]: boolean } = {
 	[getfenv] = true,
 	[setfenv] = true,
@@ -176,6 +198,7 @@ local SANDBOX_CONFIG: { [string]: any } = {}
 	@return boolean -- Whether the operation was *completely* successful.
 ]=]
 function Sandboxer.EditDefaultSandbox(config: { [string]: any }): boolean
+	CheckForActor()
 	local success = true
 	for key, value in config do
 		if not (ForbiddenGlobals[value] or ForbiddenGlobals[key]) then
@@ -227,6 +250,7 @@ end
 function Sandboxer:Init()	
 	setfenv(0, _ENV) -- just in case something tampered with it; setfenv is localized
 	local CallingFenv, LEVEL = GetHighestEnv()
+	CheckForActor(CallingFenv.script)
 	if getmetatable(CallingFenv :: any) == IS_SANDBOXED_REF then
 		return
 	end
@@ -266,6 +290,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 	if not IsValid then
 		error("invalid level or function", 2)
 	end
+	CheckForActor(CallingFenv.script)
 	if getmetatable(CallingFenv :: any) == IS_SANDBOXED_REF then
 		return
 	end
@@ -451,15 +476,6 @@ Sandboxer.InstanceSandboxer = InstanceSandboxer
 	A reference to the [`InstanceList` class](InstanceList).
 ]=]
 Sandboxer.InstanceList = InstanceList
-
---[=[
-	@within Sandboxer
-	@prop Config typeof(Config)
-	@readonly
-
-	A reference to the [`Config`](Config).
-]=]
-Sandboxer.Config = require("@self/Config")
 
 -- allow HttpService methods like GenerateGUID and JSON functions, but disallow network with hooks
 do
