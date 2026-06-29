@@ -4,9 +4,9 @@ gitSourceBranch = "main"
 changelog = true
 classOrder = [
     "Sandboxer",
+    "Config",
     "InstanceSandboxer",
     "InstanceList",
-    "Config"
 ]
 
 [docusaurus]
