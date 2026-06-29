@@ -109,7 +109,7 @@ pub struct LuauExecutionTaskResponse {
     pub update_time: Option<String>,
     pub user: String,
     pub state: LuauExecutionTaskState,
-    pub script: String,
+    pub script: Option<String>,
     pub timeout: Option<String>,
     pub error: Option<LuauExecutionTaskError>,
     pub output: Option<LuauExecutionTaskOutput>,
