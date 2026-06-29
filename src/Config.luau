@@ -31,7 +31,7 @@ local Config = {}
     @readonly
 
     Whether the sandbox will allow Actors (Parallel Luau)
-    to be used in the sandbox.
+    to be used in the sandbox. Defaults to `false`.
 
     When this is `false`, any call to the sandboxer from an
     Actor will error. Each Actor creates its own instance of
@@ -50,7 +50,7 @@ Config.AllowParallelLuau = false
     @prop TrackInstances boolean
     @readonly
     
-    Whether the sandbox should track `Instance`s.
+    Whether the sandbox should track `Instance`s. Defaults to `false`.
     
     If this is enabled, the sandbox will keep track of all `Instance`s
     that are created in the sandbox. It will also track all `Instance`s 
@@ -68,6 +68,7 @@ Config.TrackInstances = false
     @readonly
     
     Whether the sandbox should track `RBXScriptConnection`s.
+    Defaults to `false`.
     
     If this is enabled, the sandbox will keep track of all 
     `RBXScriptConnection`s that are created in the sandbox.
