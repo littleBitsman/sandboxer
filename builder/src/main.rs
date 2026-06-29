@@ -256,8 +256,9 @@ fn stream_and_print_logs(cli: &Client, api_key: &str, id: &str) {
             }
         }
 
-        page_token = logs_resp.next_page_token;
-        if page_token.is_empty() {
+        if let Some(token) = logs_resp.next_page_token {
+            page_token = token;
+        } else {
             break;
         }
     }

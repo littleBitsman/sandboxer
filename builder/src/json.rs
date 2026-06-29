@@ -86,7 +86,7 @@ pub struct LuauExecutionTaskLog {
 #[serde(rename_all = "camelCase")]
 pub struct LuauExecutionTaskLogsResponse {
     pub luau_execution_session_task_logs: Vec<LuauExecutionTaskLog>,
-    pub next_page_token: String,
+    pub next_page_token: Option<String>,
 }
 
 #[derive(serde::Deserialize, Debug, PartialEq, Eq)]
