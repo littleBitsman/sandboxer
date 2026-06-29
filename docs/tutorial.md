@@ -45,7 +45,7 @@ Sandboxer.EditDefaultSandbox({
 You can also configure which Roblox objects are accessible:
 
 ```lua
-Sandboxer.InstanceList.ForbiddenClasses["DataStoreService"] = true
+Sandboxer.InstanceList.ExplicitDisallow[game:GetService("DataStoreService")] = false
 table.insert(Sandboxer.InstanceList.DisallowedClasses, "HttpService")
 ```
 
