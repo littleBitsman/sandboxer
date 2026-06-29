@@ -78,7 +78,7 @@ pub struct LuauExecutionTaskLogEntry {
 #[serde(rename_all = "camelCase")]
 pub struct LuauExecutionTaskLog {
     pub path: String,
-    pub messages: [(); 0],
+    pub messages: Option<[(); 0]>,
     pub structured_messages: Vec<LuauExecutionTaskLogEntry>,
 }
 
