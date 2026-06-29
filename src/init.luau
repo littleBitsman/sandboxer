@@ -193,6 +193,18 @@ local SANDBOX_CONFIG: { [string]: any } = {}
 	**The table is NOT recursively checked for forbidden globals. If you manage
 	to bypass the checks, you are responsible for any consequences.**
 
+	### Example
+	```lua
+	Sandboxer.EditDefaultSandbox({
+		game = false, -- removes game from the sandbox
+		print = function(...) print("Intercepted!", ...) end,
+		workspace = nil, -- does nothing
+	})
+
+	-- in sandboxed code...
+	print(game, "Hello, world!", workspace) -- prints: Intercepted! nil Hello, world! Workspace
+	```
+
 	@param config -- A table containing the configuration for the sandbox.
 
 	@return boolean -- Whether the operation was *completely* successful.
