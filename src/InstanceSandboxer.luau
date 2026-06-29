@@ -26,6 +26,8 @@ debug.setmemorycategory("Sandboxer")
 
 --[=[
 	@class InstanceSandboxer
+	@tag Advanced
+	@tag Customization
 
 	A class for wrapping and unwrapping `Instance`s and `RBXScriptSignal`s.
 ]=]
@@ -40,6 +42,7 @@ local WRAPPED_SIGNALS, UNWRAP_SIGNALS = InstanceList.WRAPPED_SIGNALS, InstanceLi
 	@within InstanceSandboxer
 	@prop Instances { [Instance]: true }
 	@readonly
+	@tag Advanced
 
 	A set of all `Instance`s that have been accessed in the sandbox, 
 	including those that were created by the sandbox and those that were not. 
@@ -73,6 +76,7 @@ InstanceSandboxer.Instances = setmetatable({} :: any, { __mode = "k" }) :: { [In
 	@within InstanceSandboxer
 	@prop NewInstances { [Instance]: true }
 	@readonly
+	@tag Advanced
 
 	A set of `Instance`s that have been created in the sandbox.
 	This is used for tracking Instances that were created by 
@@ -113,6 +117,7 @@ end
 	@within InstanceSandboxer
 	@prop RBXScriptConnections { [RBXScriptConnection]: true }
 	@readonly
+	@tag Advanced
 
 	A set of `RBXScriptConnection`s that have been created by the sandbox. 
 	This is used for tracking connections so that they can be cleaned up
@@ -180,6 +185,8 @@ end
 
 --[=[
 	@within InstanceSandboxer
+	@tag Advanced
+	@tag Internal
 
 	Deeply wraps `v` if it is a table, wrapping `Instance`s and `RBXScriptSignal`s as needed.
 	If `v` is an `Instance` or `RBXScriptSignal`, it will be wrapped and returned.
@@ -188,8 +195,8 @@ end
 	@param instance Instance? -- The `Instance` if wrapping one of its properties, methods, or events.
 	@param key string? -- The key of the property, method, or event being wrapped, if applicable.
 	@param freeze boolean? -- Whether to freeze tables.
-	@param pvisited any? -- *Internal parameter, **do not use***.
-	@returns any -- The deeply wrapped value.
+	@param pvisited any? -- *Internal parameter, **do not use***. 
+	@return any -- The deeply wrapped value.
 ]=]
 function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, freeze: boolean?, pvisited: { [any]: any }?): any
 	local visited: { [any]: any } = pvisited or {}
@@ -247,6 +254,8 @@ function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, f
 end
 --[=[
 	@within InstanceSandboxer
+	@tag Advanced
+	@tag Internal
 
 	Deeply unwraps `v` if it is a table, unwrapping `Instance`s and `RBXScriptSignal`s as needed.
 	If `v` is a wrapped `Instance` or `RBXScriptSignal`, it will be unwrapped and returned.
@@ -254,7 +263,7 @@ end
 	@param v any -- The value to deeply unwrap.
 	@param freeze boolean? -- Whether to freeze tables.
 	@param pvisited any? -- *Internal parameter, **do not use***.
-	@returns any -- The deeply unwrapped value.
+	@return any -- The deeply unwrapped value.
 ]=]
 function InstanceSandboxer.deepUnwrap(v: any, freeze: boolean?, pvisited: { [any]: any }?): any
 	local visited: { [any]: any } = pvisited or {}
@@ -306,6 +315,7 @@ InstanceSandboxer.isWrappedSignal = InstanceList.isWrappedSignal
 InstanceSandboxer.unwrap = InstanceList.unwrap
 --[=[
 	@within InstanceSandboxer
+	@tag Internal
 
 	Deeply unwraps all arguments passed to the function (usually
 	from inside the sandbox), making them ready to be used in a
@@ -325,6 +335,7 @@ end
 
 --[=[
 	@within InstanceSandboxer
+	@tag Internal
 
 	Deeply wraps all arguments passed to the function, making
 	them ready to be returned to the sandboxed environment.
@@ -343,6 +354,7 @@ end
 
 --[=[
 	@within InstanceSandboxer
+	@tag Internal
 
 	Wraps a function in a proxy that allows it to be safely used in the sandbox.
 	The wrapped function will return wrapped arguments when called.
@@ -381,6 +393,7 @@ InstanceSandboxer.typeof = InstanceSandboxer.wrapFn(typeof, false, true)
 
 --[=[
 	@within InstanceSandboxer
+	@tag Internal
 
 	Wraps a function in a proxy that allows it to be safely used outside the sandbox.
 	This is mainly used for callbacks being added for things like BindableFunctions.
@@ -675,8 +688,10 @@ local SIGNAL_INDEX_METAMETHOD = function(self: any, k: any)
 		return INDEX_FAIL(self, k)
 	end
 end
+
 --[=[
 	@within InstanceSandboxer
+	@tag Internal
 
 	Wraps an `RBXScriptSignal` in a proxy that allows it to be safely used in 
 	the sandbox. The proxy will have the same methods as an `RBXScriptSignal`, 
@@ -717,6 +732,7 @@ end
 
 --[=[
 	@within InstanceSandboxer
+	@tag Internal
 
 	Wraps an `Instance` in a proxy that allows it to be safely used in the sandbox.
 	The proxy will have the same properties, methods, and events as the `Instance`, 
@@ -877,6 +893,7 @@ end
 
 --[=[
 	@within InstanceSandboxer
+	@tag Advanced
 
 	Hooks a specific metamethod on a wrapped `Instance`. Allows for hooking functions
 	on Instances, modifying behaviors, or changing properties within sandboxed code.
@@ -906,7 +923,7 @@ end
 		if key == "Create" then
 			-- calls __index on TweenService (unwrapped!!)
 			-- will return the wrapped TweenService.Create function
-			local create = originalIndex(game.TweenService, key)
+			local create = originalIndex(TweenService, key)
 			return function(self, ...)
 				-- due to Luau syntax desugaring, we must explicitly pass
 				-- self. Calling Something:Func(...) is implicitly the same

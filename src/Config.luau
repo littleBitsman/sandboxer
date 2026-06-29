@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 --[=[
     @class Config
+    @tag Basic
+    @tag Customization
     
     A module for configuring various aspects of the sandbox.
 ]=]
@@ -29,9 +31,11 @@ local Config = {}
     @within Config
     @prop AllowParallelLuau boolean
     @readonly
+    @tag Advanced
+    @tag Customization
 
     Whether the sandbox will allow Actors (Parallel Luau)
-    to be used in the sandbox. Defaults to `false`.
+    to be used in the sandbox. **Default:** `false`.
 
     When this is `false`, any call to the sandboxer from an
     Actor will error. Each Actor creates its own instance of
@@ -49,8 +53,10 @@ Config.AllowParallelLuau = false
     @within Config
     @prop TrackInstances boolean
     @readonly
+    @tag Basic
+    @tag Customization
     
-    Whether the sandbox should track `Instance`s. Defaults to `false`.
+    Whether the sandbox should track `Instance`s. **Default:** `false`.
     
     If this is enabled, the sandbox will keep track of all `Instance`s
     that are created in the sandbox. It will also track all `Instance`s 
@@ -66,9 +72,11 @@ Config.TrackInstances = false
     @within Config
     @prop TrackRBXScriptConnections boolean
     @readonly
+    @tag Basic
+    @tag Customization
     
     Whether the sandbox should track `RBXScriptConnection`s.
-    Defaults to `false`.
+    **Default:** `false`.
     
     If this is enabled, the sandbox will keep track of all 
     `RBXScriptConnection`s that are created in the sandbox.

@@ -22,6 +22,8 @@ debug.setmemorycategory("Sandboxer")
 
 --[=[
 	@class InstanceList
+	@tag Basic
+	@tag Customization
 	
 	A list of `Instance`s that are allowed or disallowed in the sandbox.
 	
@@ -36,6 +38,8 @@ local DisallowedClasses: {string} = {}
 	@within InstanceList
 	@prop DisallowedClasses {string}
 	@readonly
+	@tag Basic
+	@tag Customization
 	
 	A list of classes that are not allowed to be created by
 	`Instance.new` nor `Instance.fromExisting`.
@@ -54,6 +58,8 @@ local ForbiddenClasses: {string} = {}
 	@within InstanceList
 	@prop ForbiddenClasses {string}
 	@readonly
+	@tag Basic
+	@tag Customization
 	
 	A list of classes that are not allowed to be accessed
 	via the sandbox, period. Every time an `Instance` reference
@@ -86,6 +92,8 @@ local ExplicitDisallow: { [Instance]: boolean } = {
 	@within InstanceList
 	@prop ExplicitDisallow { [Instance]: boolean }
 	@readonly
+	@tag Basic
+	@tag Customization
 	
 	A list of `Instance`s that are explicitly disallowed in the sandbox.
 	This is a mapping of `Instance`s to boolean values, which indicate whether
@@ -117,6 +125,8 @@ local Allow: { [Instance]: boolean } = {
 	@within InstanceList
 	@prop Allow { [Instance]: boolean }
 	@readonly
+	@tag Basic
+	@tag Customization
 	
 	A list of `Instance`s that are allowed in the sandbox.
 	This is a mapping of `Instance`s to boolean values, which indicate whether
@@ -136,6 +146,8 @@ InstanceList.Allow = Allow
 
 --[=[
 	@within InstanceList
+	@tag Basic
+	@tag Customization
 	
 	Checks if an `Instance` is allowed in the sandbox based on
 	`Allow`, `ExplicitDisallow`, and `ForbiddenClasses`.
@@ -178,6 +190,7 @@ InstanceList.WRAPPED_SIGNALS, InstanceList.UNWRAP_SIGNALS = WRAPPED_SIGNALS, UNW
 
 --[=[
 	@within InstanceSandboxer
+	@tag Basic
 	
 	Unwraps a wrapped `Instance` or `RBXScriptSignal`.
 	If the `Instance` or `RBXScriptSignal` is not wrapped, it will return `nil`.
@@ -189,6 +202,7 @@ function InstanceList.unwrap(a: any): (Instance | RBXScriptSignal)?
 end
 --[=[
 	@within InstanceSandboxer
+	@tag Basic
 	
 	Checks if `a` is a wrapped `Instance`.
 	
@@ -200,6 +214,7 @@ function InstanceList.isWrapped(a: any): boolean
 end
 --[=[
 	@within InstanceSandboxer
+	@tag Basic
 	
 	Checks if `a` is a wrapped `RBXScriptSignal`.
 	

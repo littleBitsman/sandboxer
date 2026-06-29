@@ -32,6 +32,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	Having this be the first line guarantees that the script is sandboxed before any other code runs.
 	You would have to check if it is the first line of code yourself, using external sources with
 	modules such as [rbx-reader](https://npmjs.org/package/rbx-reader).
+
+	There are a few tags defined on various items across the module. They are as follows:
+	- Basic: Used commonly or are required for generic use and will be used by most users
+	- Customization: Useful for customization
+	- Advanced: Useful for more advanced purposes, will likely *not* be used by most users
+	- Internal: Used internally by the module. Only use if you know what you're doing
 ]=]
 local Sandboxer = {}
 
@@ -39,6 +45,7 @@ local Sandboxer = {}
 	@within Sandboxer
 	@prop Config typeof(Config)
 	@readonly
+	@tag Basic
 
 	A reference to the [`Config`](Config).
 ]=]
@@ -162,6 +169,8 @@ local SANDBOX_CONFIG: { [string]: any } = {}
 
 --[=[
 	@within Sandboxer
+	@tag Basic
+	@tag Customization
 
 	Edits the default sandbox configuration. This is used to add or remove certain
 	globals in the sandbox environment.
@@ -243,6 +252,7 @@ end
 
 --[=[
 	@within Sandboxer
+	@tag Basic
 
 	Initializes the sandbox environment for the calling script.
 
@@ -274,6 +284,7 @@ end
 
 --[=[
 	@within Sandboxer
+	@tag Basic
 
 	Sandboxes the given function or the calling script at the specified level.
 
@@ -438,6 +449,7 @@ end
 
 --[=[
 	@within Sandboxer
+	@tag Basic
 
 	Loads the Luau chunk `src` as a function using `loadstring` and 
 	sandboxes it. **`ServerScriptService.LoadStringEnabled` must be `true`
@@ -445,6 +457,7 @@ end
 
 	@param src -- The specified string to be loaded as Luau code.
 	@param chunkname -- An optional chunk name for error messages and debug information.
+	@return InstanceSandboxer.AnyFn -- The loaded & sandboxed function.
 
 	@error "loadstring() is not available" -- ServerScriptService.LoadStringEnabled was false.
 ]=]
@@ -475,6 +488,8 @@ Sandboxer.typeof = InstanceSandboxer.typeof
 	@within Sandboxer
 	@prop InstanceSandboxer typeof(InstanceSandboxer)
 	@readonly
+	@tag Advanced
+	@tag Customization
 
 	A reference to the [`InstanceSandboxer` class](InstanceSandboxer).
 ]=]
@@ -484,6 +499,8 @@ Sandboxer.InstanceSandboxer = InstanceSandboxer
 	@within Sandboxer
 	@prop InstanceList typeof(InstanceList)
 	@readonly
+	@tag Basic
+	@tag Customization
 
 	A reference to the [`InstanceList` class](InstanceList).
 ]=]
