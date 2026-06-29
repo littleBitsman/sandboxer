@@ -13,7 +13,13 @@ This would be expected to be the first line of all scripts that are to be sandbo
 
 Having this be the first line guarantees that the script is sandboxed before any other code runs.
 You would have to check if it is the first line of code yourself, using external sources with
-modules such as [rbx-reader](https://npmjs.org/package/rbx-reader)."><meta data-rh="true" property="og:description" content="The main Sandboxer class. This class is intended to be used as follows,
+modules such as [rbx-reader](https://npmjs.org/package/rbx-reader).
+
+There are a few tags defined on various items across the module. They are as follows:
+- Basic: Used commonly or are required for generic use and will be used by most users
+- Customization: Useful for customization
+- Advanced: Useful for more advanced purposes, will likely *not* be used by most users
+- Internal: Used internally by the module. Only use if you know what you&#x27;re doing"><meta data-rh="true" property="og:description" content="The main Sandboxer class. This class is intended to be used as follows,
 where the module is placed in ServerScriptService named `Init`:
 ```lua
 require(game:GetService(&quot;ServerScriptService&quot;).Init):Init()
@@ -23,9 +29,15 @@ This would be expected to be the first line of all scripts that are to be sandbo
 
 Having this be the first line guarantees that the script is sandboxed before any other code runs.
 You would have to check if it is the first line of code yourself, using external sources with
-modules such as [rbx-reader](https://npmjs.org/package/rbx-reader)."><link data-rh="true" rel="canonical" href="https://littlebitsman.dev/sandboxer/api/Sandboxer"><link data-rh="true" rel="alternate" href="https://littlebitsman.dev/sandboxer/api/Sandboxer" hreflang="en"><link data-rh="true" rel="alternate" href="https://littlebitsman.dev/sandboxer/api/Sandboxer" hreflang="x-default"><link rel="stylesheet" href="/sandboxer/assets/css/styles.e8e96400.css">
-<script src="/sandboxer/assets/js/runtime~main.d45f9c99.js" defer="defer"></script>
-<script src="/sandboxer/assets/js/main.a131ead2.js" defer="defer"></script>
+modules such as [rbx-reader](https://npmjs.org/package/rbx-reader).
+
+There are a few tags defined on various items across the module. They are as follows:
+- Basic: Used commonly or are required for generic use and will be used by most users
+- Customization: Useful for customization
+- Advanced: Useful for more advanced purposes, will likely *not* be used by most users
+- Internal: Used internally by the module. Only use if you know what you&#x27;re doing"><link data-rh="true" rel="canonical" href="https://littlebitsman.dev/sandboxer/api/Sandboxer"><link data-rh="true" rel="alternate" href="https://littlebitsman.dev/sandboxer/api/Sandboxer" hreflang="en"><link data-rh="true" rel="alternate" href="https://littlebitsman.dev/sandboxer/api/Sandboxer" hreflang="x-default"><link rel="stylesheet" href="/sandboxer/assets/css/styles.e8e96400.css">
+<script src="/sandboxer/assets/js/runtime~main.20030b02.js" defer="defer"></script>
+<script src="/sandboxer/assets/js/main.11cb62e8.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -47,13 +59,20 @@ modules such as [rbx-reader](https://npmjs.org/package/rbx-reader)."><link data-
   You would have to check if it is the first line of code yourself, using external sources with
   modules such as <a href="https://npmjs.org/package/rbx-reader">rbx-reader</a>.
 </p>
-</div></header><h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="properties">Properties<a href="#properties" class="hash-link" aria-label="Direct link to Properties" title="Direct link to Properties" translate="no">​</a></h2><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Config"><code style="text-decoration:none">Config</code><a href="#Config" class="hash-link" aria-label="Direct link to Config" title="Direct link to Config" translate="no">​</a></h3><span class="badge_Ba2I" style="color:#e74c3c"><span class="badgeTooltip_cWXP">This item is read only and cannot be modified.</span><span class="badgeToolTipTail_H9D_"><svg xmlns="http://www.w3.org/2000/svg" height="300px" width="300px" fill="#e74c3c" x="0px" y="0px" viewBox="0 0 96 96"><path d="M70.354,15.662h-7.496H25.566c-3.282,0-5.19-0.776-5.728-1.169v-1.456c0.538-0.393,2.445-1.168,5.728-1.168h46.479V8H25.566  c-4.776,0-9.594,1.468-9.594,4.747v61.458C15.972,86.645,20.328,88,37.495,88h42.535V15.662H70.354z"></path></svg> <!-- -->Read Only</span></span><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/littleBitsman/sandboxer/blob/main/src/init.luau#L45"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>Sandboxer<!-- -->.<!-- -->Config<!-- -->:<!-- --> </code> <code class="blue_P4bS">typeof</code><code class="purple_ieR2">(</code><code class="blue_P4bS"><a style="text-decoration:underline;color:inherit" href="/sandboxer/api/Config">Config</a></code><code class="purple_ieR2">)</code></div><div>
+<p>There are a few tags defined on various items across the module. They are as follows:</p>
+<ul>
+  <li>Basic: Used commonly or are required for generic use and will be used by most users</li>
+  <li>Customization: Useful for customization</li>
+  <li>Advanced: Useful for more advanced purposes, will likely <em>not</em> be used by most users</li>
+  <li>Internal: Used internally by the module. Only use if you know what you're doing</li>
+</ul>
+</div></header><h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="properties">Properties<a href="#properties" class="hash-link" aria-label="Direct link to Properties" title="Direct link to Properties" translate="no">​</a></h2><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Config"><code style="text-decoration:none">Config</code><a href="#Config" class="hash-link" aria-label="Direct link to Config" title="Direct link to Config" translate="no">​</a></h3><span class="badge_Ba2I" style="color:#e74c3c"><span class="badgeTooltip_cWXP">This item is read only and cannot be modified.</span><span class="badgeToolTipTail_H9D_"><svg xmlns="http://www.w3.org/2000/svg" height="300px" width="300px" fill="#e74c3c" x="0px" y="0px" viewBox="0 0 96 96"><path d="M70.354,15.662h-7.496H25.566c-3.282,0-5.19-0.776-5.728-1.169v-1.456c0.538-0.393,2.445-1.168,5.728-1.168h46.479V8H25.566  c-4.776,0-9.594,1.468-9.594,4.747v61.458C15.972,86.645,20.328,88,37.495,88h42.535V15.662H70.354z"></path></svg> <!-- -->Read Only</span></span><span class="docTag__6UZ" style="border-color:#218c74;color:#218c74">Basic</span><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/littleBitsman/sandboxer/blob/main/src/init.luau#L52"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>Sandboxer<!-- -->.<!-- -->Config<!-- -->:<!-- --> </code> <code class="blue_P4bS">typeof</code><code class="purple_ieR2">(</code><code class="blue_P4bS"><a style="text-decoration:underline;color:inherit" href="/sandboxer/api/Config">Config</a></code><code class="purple_ieR2">)</code></div><div>
 <p>A reference to the <a href="Config"><code>Config</code></a>.</p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="InstanceSandboxer"><code style="text-decoration:none">InstanceSandboxer</code><a href="#InstanceSandboxer" class="hash-link" aria-label="Direct link to InstanceSandboxer" title="Direct link to InstanceSandboxer" translate="no">​</a></h3><span class="badge_Ba2I" style="color:#e74c3c"><span class="badgeTooltip_cWXP">This item is read only and cannot be modified.</span><span class="badgeToolTipTail_H9D_"><svg xmlns="http://www.w3.org/2000/svg" height="300px" width="300px" fill="#e74c3c" x="0px" y="0px" viewBox="0 0 96 96"><path d="M70.354,15.662h-7.496H25.566c-3.282,0-5.19-0.776-5.728-1.169v-1.456c0.538-0.393,2.445-1.168,5.728-1.168h46.479V8H25.566  c-4.776,0-9.594,1.468-9.594,4.747v61.458C15.972,86.645,20.328,88,37.495,88h42.535V15.662H70.354z"></path></svg> <!-- -->Read Only</span></span><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/littleBitsman/sandboxer/blob/main/src/init.luau#L469"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>Sandboxer<!-- -->.<!-- -->InstanceSandboxer<!-- -->:<!-- --> </code> <code class="blue_P4bS">typeof</code><code class="purple_ieR2">(</code><code class="blue_P4bS"><a style="text-decoration:underline;color:inherit" href="/sandboxer/api/InstanceSandboxer">InstanceSandboxer</a></code><code class="purple_ieR2">)</code></div><div>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="InstanceSandboxer"><code style="text-decoration:none">InstanceSandboxer</code><a href="#InstanceSandboxer" class="hash-link" aria-label="Direct link to InstanceSandboxer" title="Direct link to InstanceSandboxer" translate="no">​</a></h3><span class="badge_Ba2I" style="color:#e74c3c"><span class="badgeTooltip_cWXP">This item is read only and cannot be modified.</span><span class="badgeToolTipTail_H9D_"><svg xmlns="http://www.w3.org/2000/svg" height="300px" width="300px" fill="#e74c3c" x="0px" y="0px" viewBox="0 0 96 96"><path d="M70.354,15.662h-7.496H25.566c-3.282,0-5.19-0.776-5.728-1.169v-1.456c0.538-0.393,2.445-1.168,5.728-1.168h46.479V8H25.566  c-4.776,0-9.594,1.468-9.594,4.747v61.458C15.972,86.645,20.328,88,37.495,88h42.535V15.662H70.354z"></path></svg> <!-- -->Read Only</span></span><span class="docTag__6UZ" style="border-color:#70cc00;color:#70cc00">Advanced</span><span class="docTag__6UZ" style="border-color:#79b473;color:#79b473">Customization</span><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/littleBitsman/sandboxer/blob/main/src/init.luau#L496"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>Sandboxer<!-- -->.<!-- -->InstanceSandboxer<!-- -->:<!-- --> </code> <code class="blue_P4bS">typeof</code><code class="purple_ieR2">(</code><code class="blue_P4bS"><a style="text-decoration:underline;color:inherit" href="/sandboxer/api/InstanceSandboxer">InstanceSandboxer</a></code><code class="purple_ieR2">)</code></div><div>
 <p>A reference to the <a href="InstanceSandboxer"><code>InstanceSandboxer</code> class</a>.</p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="InstanceList"><code style="text-decoration:none">InstanceList</code><a href="#InstanceList" class="hash-link" aria-label="Direct link to InstanceList" title="Direct link to InstanceList" translate="no">​</a></h3><span class="badge_Ba2I" style="color:#e74c3c"><span class="badgeTooltip_cWXP">This item is read only and cannot be modified.</span><span class="badgeToolTipTail_H9D_"><svg xmlns="http://www.w3.org/2000/svg" height="300px" width="300px" fill="#e74c3c" x="0px" y="0px" viewBox="0 0 96 96"><path d="M70.354,15.662h-7.496H25.566c-3.282,0-5.19-0.776-5.728-1.169v-1.456c0.538-0.393,2.445-1.168,5.728-1.168h46.479V8H25.566  c-4.776,0-9.594,1.468-9.594,4.747v61.458C15.972,86.645,20.328,88,37.495,88h42.535V15.662H70.354z"></path></svg> <!-- -->Read Only</span></span><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/littleBitsman/sandboxer/blob/main/src/init.luau#L478"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>Sandboxer<!-- -->.<!-- -->InstanceList<!-- -->:<!-- --> </code> <code class="blue_P4bS">typeof</code><code class="purple_ieR2">(</code><code class="blue_P4bS"><a style="text-decoration:underline;color:inherit" href="/sandboxer/api/InstanceList">InstanceList</a></code><code class="purple_ieR2">)</code></div><div>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="InstanceList"><code style="text-decoration:none">InstanceList</code><a href="#InstanceList" class="hash-link" aria-label="Direct link to InstanceList" title="Direct link to InstanceList" translate="no">​</a></h3><span class="badge_Ba2I" style="color:#e74c3c"><span class="badgeTooltip_cWXP">This item is read only and cannot be modified.</span><span class="badgeToolTipTail_H9D_"><svg xmlns="http://www.w3.org/2000/svg" height="300px" width="300px" fill="#e74c3c" x="0px" y="0px" viewBox="0 0 96 96"><path d="M70.354,15.662h-7.496H25.566c-3.282,0-5.19-0.776-5.728-1.169v-1.456c0.538-0.393,2.445-1.168,5.728-1.168h46.479V8H25.566  c-4.776,0-9.594,1.468-9.594,4.747v61.458C15.972,86.645,20.328,88,37.495,88h42.535V15.662H70.354z"></path></svg> <!-- -->Read Only</span></span><span class="docTag__6UZ" style="border-color:#218c74;color:#218c74">Basic</span><span class="docTag__6UZ" style="border-color:#79b473;color:#79b473">Customization</span><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/littleBitsman/sandboxer/blob/main/src/init.luau#L507"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>Sandboxer<!-- -->.<!-- -->InstanceList<!-- -->:<!-- --> </code> <code class="blue_P4bS">typeof</code><code class="purple_ieR2">(</code><code class="blue_P4bS"><a style="text-decoration:underline;color:inherit" href="/sandboxer/api/InstanceList">InstanceList</a></code><code class="purple_ieR2">)</code></div><div>
 <p>A reference to the <a href="InstanceList"><code>InstanceList</code> class</a>.</p>
-</div><h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="functions">Functions<a href="#functions" class="hash-link" aria-label="Direct link to Functions" title="Direct link to Functions" translate="no">​</a></h2><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="EditDefaultSandbox"><code style="text-decoration:none">EditDefaultSandbox</code><a href="#EditDefaultSandbox" class="hash-link" aria-label="Direct link to EditDefaultSandbox" title="Direct link to EditDefaultSandbox" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/littleBitsman/sandboxer/blob/main/src/init.luau#L200"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>Sandboxer<!-- -->.</code><code class="green_DgR4">EditDefaultSandbox</code><code>(</code><div class="inset_uKQm"><div><code>config<!-- -->: </code><code class="purple_ieR2">{</code><span><code>[</code><code class="blue_P4bS">string</code><code>]</code></span><code>: </code><code class="blue_P4bS">any</code><code class="purple_ieR2">}</code><span class="inlineDescription_G7Er">-- <span>
+</div><h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="functions">Functions<a href="#functions" class="hash-link" aria-label="Direct link to Functions" title="Direct link to Functions" translate="no">​</a></h2><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="EditDefaultSandbox"><code style="text-decoration:none">EditDefaultSandbox</code><a href="#EditDefaultSandbox" class="hash-link" aria-label="Direct link to EditDefaultSandbox" title="Direct link to EditDefaultSandbox" translate="no">​</a></h3><span class="docTag__6UZ" style="border-color:#218c74;color:#218c74">Basic</span><span class="docTag__6UZ" style="border-color:#79b473;color:#79b473">Customization</span><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/littleBitsman/sandboxer/blob/main/src/init.luau#L221"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>Sandboxer<!-- -->.</code><code class="green_DgR4">EditDefaultSandbox</code><code>(</code><div class="inset_uKQm"><div><code>config<!-- -->: </code><code class="purple_ieR2">{</code><span><code>[</code><code class="blue_P4bS">string</code><code>]</code></span><code>: </code><code class="blue_P4bS">any</code><code class="purple_ieR2">}</code><span class="inlineDescription_G7Er">-- <span>
 <p>A table containing the configuration for the sandbox.</p>
 </span></span></div></div><code>) → </code><code class="blue_P4bS">boolean</code><span class="inlineDescription_G7Er">-- <span>
 <p>Whether the operation was <em>completely</em> successful.</p>
@@ -92,7 +111,17 @@ function is called</strong>. Calls to this will overwrite previous values, if an
 </p>
 <p><strong>The table is NOT recursively checked for forbidden globals. If you manage
 to bypass the checks, you are responsible for any consequences.</strong></p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Init"><code style="text-decoration:none">Init</code><a href="#Init" class="hash-link" aria-label="Direct link to Init" title="Direct link to Init" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/littleBitsman/sandboxer/blob/main/src/init.luau#L250"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>Sandboxer<!-- -->:</code><code class="green_DgR4">Init</code><code>(</code><code>) → </code><code>(</code><code>)</code></div><div>
+<h3>Example</h3>
+<pre class="language-lua"><code class="language-lua">Sandboxer<span class="token punctuation">.</span><span class="token function">EditDefaultSandbox</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+	game <span class="token operator">=</span> <span class="token keyword">false</span><span class="token punctuation">,</span> <span class="token comment">-- removes game from the sandbox</span>
+	print <span class="token operator">=</span> <span class="token keyword">function</span><span class="token punctuation">(</span><span class="token punctuation">...</span><span class="token punctuation">)</span> <span class="token function">print</span><span class="token punctuation">(</span><span class="token string">"Intercepted!"</span><span class="token punctuation">,</span> <span class="token punctuation">...</span><span class="token punctuation">)</span> <span class="token keyword">end</span><span class="token punctuation">,</span>
+	workspace <span class="token operator">=</span> <span class="token keyword">nil</span><span class="token punctuation">,</span> <span class="token comment">-- does nothing</span>
+<span class="token punctuation">}</span><span class="token punctuation">)</span>
+
+<span class="token comment">-- in sandboxed code...</span>
+<span class="token function">print</span><span class="token punctuation">(</span>game<span class="token punctuation">,</span> <span class="token string">"Hello, world!"</span><span class="token punctuation">,</span> workspace<span class="token punctuation">)</span> <span class="token comment">-- prints: Intercepted! nil Hello, world! Workspace</span>
+</code></pre>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Init"><code style="text-decoration:none">Init</code><a href="#Init" class="hash-link" aria-label="Direct link to Init" title="Direct link to Init" translate="no">​</a></h3><span class="docTag__6UZ" style="border-color:#218c74;color:#218c74">Basic</span><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/littleBitsman/sandboxer/blob/main/src/init.luau#L272"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>Sandboxer<!-- -->:</code><code class="green_DgR4">Init</code><code>(</code><code>) → </code><code>(</code><code>)</code></div><div>
 <p>Initializes the sandbox environment for the calling script.</p>
 <p>The following globals are <strong>removed</strong>:</p>
 <ul>
@@ -106,7 +135,7 @@ to bypass the checks, you are responsible for any consequences.</strong></p>
 </ul>
 <p>All other globals are set to sandboxed versions of the originals.</p>
 <p>A separate table is created for <code>_G</code> / <code>shared</code></p>
-</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Sandbox"><code style="text-decoration:none">Sandbox</code><a href="#Sandbox" class="hash-link" aria-label="Direct link to Sandbox" title="Direct link to Sandbox" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/littleBitsman/sandboxer/blob/main/src/init.luau#L277"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>Sandboxer<!-- -->:</code><code class="green_DgR4">Sandbox</code><code>(</code><div class="inset_uKQm"><div><code>fnOrLevel<!-- -->: </code><code class="blue_P4bS">InstanceSandboxer.AnyFn</code><code class="op_lSLc"> | </code><code class="blue_P4bS">number</code><span class="inlineDescription_G7Er">-- <span>
+</div><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="Sandbox"><code style="text-decoration:none">Sandbox</code><a href="#Sandbox" class="hash-link" aria-label="Direct link to Sandbox" title="Direct link to Sandbox" translate="no">​</a></h3><span class="docTag__6UZ" style="border-color:#218c74;color:#218c74">Basic</span><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/littleBitsman/sandboxer/blob/main/src/init.luau#L300"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>Sandboxer<!-- -->:</code><code class="green_DgR4">Sandbox</code><code>(</code><div class="inset_uKQm"><div><code>fnOrLevel<!-- -->: </code><code class="blue_P4bS">InstanceSandboxer.AnyFn</code><code class="op_lSLc"> | </code><code class="blue_P4bS">number</code><span class="inlineDescription_G7Er">-- <span>
 <p>The function to sandbox or the level to sandbox at.</p>
 </span></span></div></div><code>) → </code><code>(</code><code>)</code></div><div>
 <p>Sandboxes the given function or the calling script at the specified level.</p>
@@ -132,11 +161,13 @@ to bypass the checks, you are responsible for any consequences.</strong></p>
     </tr>
   </tbody>
 </table>
-</div><h3>Errors</h3><table class="errorTable_jfN8"><thead><tr><th>Type</th><th>Description</th></tr></thead><tbody><tr><td>&quot;level must be at least 1&quot;</td><td>If fnOrLevel is a number, it must be at least 1.</td></tr></tbody></table><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="SandboxString"><code style="text-decoration:none">SandboxString</code><a href="#SandboxString" class="hash-link" aria-label="Direct link to SandboxString" title="Direct link to SandboxString" translate="no">​</a></h3><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/littleBitsman/sandboxer/blob/main/src/init.luau#L439"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>Sandboxer<!-- -->:</code><code class="green_DgR4">SandboxString</code><code>(</code><div class="inset_uKQm"><div><code>src<!-- -->: </code><code class="blue_P4bS">string</code><code>,</code><span class="inlineDescription_G7Er">-- <span>
+</div><h3>Errors</h3><table class="errorTable_jfN8"><thead><tr><th>Type</th><th>Description</th></tr></thead><tbody><tr><td>&quot;level must be at least 1&quot;</td><td>If fnOrLevel is a number, it must be at least 1.</td></tr></tbody></table><div class="divider_rE5g"></div><h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="SandboxString"><code style="text-decoration:none">SandboxString</code><a href="#SandboxString" class="hash-link" aria-label="Direct link to SandboxString" title="Direct link to SandboxString" translate="no">​</a></h3><span class="docTag__6UZ" style="border-color:#218c74;color:#218c74">Basic</span><div class="repositoryDetailsContainer_BPdw"><a class="sourceButton_sEho" href="https://github.com/littleBitsman/sandboxer/blob/main/src/init.luau#L464"><div class="sourceButtonText_Vh0m">&lt;/&gt;</div></a></div><div class="memberString_GwaU"><code>Sandboxer<!-- -->:</code><code class="green_DgR4">SandboxString</code><code>(</code><div class="inset_uKQm"><div><code>src<!-- -->: </code><code class="blue_P4bS">string</code><code>,</code><span class="inlineDescription_G7Er">-- <span>
 <p>The specified string to be loaded as Luau code.</p>
 </span></span></div><div><code>chunkname<!-- -->: </code><code class="blue_P4bS">string</code><span class="inlineDescription_G7Er">-- <span>
 <p>An optional chunk name for error messages and debug information.</p>
-</span></span></div></div><code>) → </code><code class="blue_P4bS">InstanceSandboxer.AnyFn</code></div><div>
+</span></span></div></div><code>) → </code><code class="blue_P4bS">InstanceSandboxer.AnyFn</code><span class="inlineDescription_G7Er">-- <span>
+<p>The loaded &#x26; sandboxed function.</p>
+</span></span></div><div>
 <p>
   Loads the Luau chunk <code>src</code> as a function using <code>loadstring</code> and
   sandboxes it. <strong><code>ServerScriptService.LoadStringEnabled</code> must be <code>true</code>
@@ -146,7 +177,7 @@ for this to work as per the <code>loadstring</code> rules.</strong>
     &quot;functions&quot;: [
         {
             &quot;name&quot;: &quot;EditDefaultSandbox&quot;,
-            &quot;desc&quot;: &quot;Edits the default sandbox configuration. This is used to add or remove certain\nglobals in the sandbox environment.\n\nThe config is saved and will be used for all future sandboxes **made AFTER this\nfunction is called**. Calls to this will overwrite previous values, if any.\n\nDue to dictionary limitations, values cannot be set to `nil`. To remove a global,\nset the value to `false`.\n\nThe following globals are **always** removed from the sandbox:\n- `getfenv`\n- `setfenv`\n- `loadstring`\n- `newproxy`\n- `debug` (library), `debug.info`, &amp; `debug.traceback`\n\nAttempting to add these functions/libraries will result in them being ignored.\nHowever, you can set them to other values, such as a custom function.\nThis will also allow you to overwrite already sandboxed globals, such as `game`.\n\nThe sandboxer will make **no attempt** to secure custom functions, so use them\nat your own risk.  \n\nThe function will return `true` if the operation was completely successful\n(i.e., all values were set on the configuration table) and `false` if any \nof the keys or values were forbidden globals.\n\n**The table is NOT recursively checked for forbidden globals. If you manage\nto bypass the checks, you are responsible for any consequences.**&quot;,
+            &quot;desc&quot;: &quot;Edits the default sandbox configuration. This is used to add or remove certain\nglobals in the sandbox environment.\n\nThe config is saved and will be used for all future sandboxes **made AFTER this\nfunction is called**. Calls to this will overwrite previous values, if any.\n\nDue to dictionary limitations, values cannot be set to `nil`. To remove a global,\nset the value to `false`.\n\nThe following globals are **always** removed from the sandbox:\n- `getfenv`\n- `setfenv`\n- `loadstring`\n- `newproxy`\n- `debug` (library), `debug.info`, &amp; `debug.traceback`\n\nAttempting to add these functions/libraries will result in them being ignored.\nHowever, you can set them to other values, such as a custom function.\nThis will also allow you to overwrite already sandboxed globals, such as `game`.\n\nThe sandboxer will make **no attempt** to secure custom functions, so use them\nat your own risk.  \n\nThe function will return `true` if the operation was completely successful\n(i.e., all values were set on the configuration table) and `false` if any \nof the keys or values were forbidden globals.\n\n**The table is NOT recursively checked for forbidden globals. If you manage\nto bypass the checks, you are responsible for any consequences.**\n\n### Example\n```lua\nSandboxer.EditDefaultSandbox({\n\tgame = false, -- removes game from the sandbox\n\tprint = function(...) print(\&quot;Intercepted!\&quot;, ...) end,\n\tworkspace = nil, -- does nothing\n})\n\n-- in sandboxed code...\nprint(game, \&quot;Hello, world!\&quot;, workspace) -- prints: Intercepted! nil Hello, world! Workspace\n```&quot;,
             &quot;params&quot;: [
                 {
                     &quot;name&quot;: &quot;config&quot;,
@@ -161,8 +192,12 @@ for this to work as per the <code>loadstring</code> rules.</strong>
                 }
             ],
             &quot;function_type&quot;: &quot;static&quot;,
+            &quot;tags&quot;: [
+                &quot;Basic&quot;,
+                &quot;Customization&quot;
+            ],
             &quot;source&quot;: {
-                &quot;line&quot;: 200,
+                &quot;line&quot;: 221,
                 &quot;path&quot;: &quot;src/init.luau&quot;
             }
         },
@@ -172,8 +207,11 @@ for this to work as per the <code>loadstring</code> rules.</strong>
             &quot;params&quot;: [],
             &quot;returns&quot;: [],
             &quot;function_type&quot;: &quot;method&quot;,
+            &quot;tags&quot;: [
+                &quot;Basic&quot;
+            ],
             &quot;source&quot;: {
-                &quot;line&quot;: 250,
+                &quot;line&quot;: 272,
                 &quot;path&quot;: &quot;src/init.luau&quot;
             }
         },
@@ -189,6 +227,9 @@ for this to work as per the <code>loadstring</code> rules.</strong>
             ],
             &quot;returns&quot;: [],
             &quot;function_type&quot;: &quot;method&quot;,
+            &quot;tags&quot;: [
+                &quot;Basic&quot;
+            ],
             &quot;errors&quot;: [
                 {
                     &quot;lua_type&quot;: &quot;\&quot;level must be at least 1\&quot;&quot;,
@@ -196,7 +237,7 @@ for this to work as per the <code>loadstring</code> rules.</strong>
                 }
             ],
             &quot;source&quot;: {
-                &quot;line&quot;: 277,
+                &quot;line&quot;: 300,
                 &quot;path&quot;: &quot;src/init.luau&quot;
             }
         },
@@ -217,11 +258,14 @@ for this to work as per the <code>loadstring</code> rules.</strong>
             ],
             &quot;returns&quot;: [
                 {
-                    &quot;desc&quot;: &quot;&quot;,
-                    &quot;lua_type&quot;: &quot;InstanceSandboxer.AnyFn\n&quot;
+                    &quot;desc&quot;: &quot;The loaded &amp; sandboxed function.&quot;,
+                    &quot;lua_type&quot;: &quot;InstanceSandboxer.AnyFn&quot;
                 }
             ],
             &quot;function_type&quot;: &quot;method&quot;,
+            &quot;tags&quot;: [
+                &quot;Basic&quot;
+            ],
             &quot;errors&quot;: [
                 {
                     &quot;lua_type&quot;: &quot;\&quot;loadstring() is not available\&quot;&quot;,
@@ -229,7 +273,7 @@ for this to work as per the <code>loadstring</code> rules.</strong>
                 }
             ],
             &quot;source&quot;: {
-                &quot;line&quot;: 439,
+                &quot;line&quot;: 464,
                 &quot;path&quot;: &quot;src/init.luau&quot;
             }
         }
@@ -239,9 +283,12 @@ for this to work as per the <code>loadstring</code> rules.</strong>
             &quot;name&quot;: &quot;Config&quot;,
             &quot;desc&quot;: &quot;A reference to the [`Config`](Config).&quot;,
             &quot;lua_type&quot;: &quot;typeof(Config)&quot;,
+            &quot;tags&quot;: [
+                &quot;Basic&quot;
+            ],
             &quot;readonly&quot;: true,
             &quot;source&quot;: {
-                &quot;line&quot;: 45,
+                &quot;line&quot;: 52,
                 &quot;path&quot;: &quot;src/init.luau&quot;
             }
         },
@@ -249,9 +296,13 @@ for this to work as per the <code>loadstring</code> rules.</strong>
             &quot;name&quot;: &quot;InstanceSandboxer&quot;,
             &quot;desc&quot;: &quot;A reference to the [`InstanceSandboxer` class](InstanceSandboxer).&quot;,
             &quot;lua_type&quot;: &quot;typeof(InstanceSandboxer)&quot;,
+            &quot;tags&quot;: [
+                &quot;Advanced&quot;,
+                &quot;Customization&quot;
+            ],
             &quot;readonly&quot;: true,
             &quot;source&quot;: {
-                &quot;line&quot;: 469,
+                &quot;line&quot;: 496,
                 &quot;path&quot;: &quot;src/init.luau&quot;
             }
         },
@@ -259,18 +310,22 @@ for this to work as per the <code>loadstring</code> rules.</strong>
             &quot;name&quot;: &quot;InstanceList&quot;,
             &quot;desc&quot;: &quot;A reference to the [`InstanceList` class](InstanceList).&quot;,
             &quot;lua_type&quot;: &quot;typeof(InstanceList)&quot;,
+            &quot;tags&quot;: [
+                &quot;Basic&quot;,
+                &quot;Customization&quot;
+            ],
             &quot;readonly&quot;: true,
             &quot;source&quot;: {
-                &quot;line&quot;: 478,
+                &quot;line&quot;: 507,
                 &quot;path&quot;: &quot;src/init.luau&quot;
             }
         }
     ],
     &quot;types&quot;: [],
     &quot;name&quot;: &quot;Sandboxer&quot;,
-    &quot;desc&quot;: &quot;The main Sandboxer class. This class is intended to be used as follows,\nwhere the module is placed in ServerScriptService named `Init`:\n```lua\nrequire(game:GetService(\&quot;ServerScriptService\&quot;).Init):Init()\n```\nThis would be expected to be the first line of all scripts that are to be sandboxed\n(not including `--!strict`, `--!optimize`, and other directives).\n\nHaving this be the first line guarantees that the script is sandboxed before any other code runs.\nYou would have to check if it is the first line of code yourself, using external sources with\nmodules such as [rbx-reader](https://npmjs.org/package/rbx-reader).&quot;,
+    &quot;desc&quot;: &quot;The main Sandboxer class. This class is intended to be used as follows,\nwhere the module is placed in ServerScriptService named `Init`:\n```lua\nrequire(game:GetService(\&quot;ServerScriptService\&quot;).Init):Init()\n```\nThis would be expected to be the first line of all scripts that are to be sandboxed\n(not including `--!strict`, `--!optimize`, and other directives).\n\nHaving this be the first line guarantees that the script is sandboxed before any other code runs.\nYou would have to check if it is the first line of code yourself, using external sources with\nmodules such as [rbx-reader](https://npmjs.org/package/rbx-reader).\n\nThere are a few tags defined on various items across the module. They are as follows:\n- Basic: Used commonly or are required for generic use and will be used by most users\n- Customization: Useful for customization\n- Advanced: Useful for more advanced purposes, will likely *not* be used by most users\n- Internal: Used internally by the module. Only use if you know what you&#x27;re doing&quot;,
     &quot;source&quot;: {
-        &quot;line&quot;: 36,
+        &quot;line&quot;: 42,
         &quot;path&quot;: &quot;src/init.luau&quot;
     }
 }</pre></details></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#properties" class="table-of-contents__link toc-highlight">Properties</a><ul><li><a href="#Config" class="table-of-contents__link toc-highlight">Config</a></li><li><a href="#InstanceList" class="table-of-contents__link toc-highlight">InstanceList</a></li><li><a href="#InstanceSandboxer" class="table-of-contents__link toc-highlight">InstanceSandboxer</a></li></ul></li><li><a href="#functions" class="table-of-contents__link toc-highlight">Functions</a><ul><li><a href="#Init" class="table-of-contents__link toc-highlight">:Init</a></li><li><a href="#Sandbox" class="table-of-contents__link toc-highlight">:Sandbox</a></li><li><a href="#SandboxString" class="table-of-contents__link toc-highlight">:SandboxString</a></li><li><a href="#EditDefaultSandbox" class="table-of-contents__link toc-highlight">.EditDefaultSandbox</a></li></ul></li></ul></div></div></div></div></main></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 littleBitsman. Docs built with Moonwave and Docusaurus</div></div></div></footer></div>
