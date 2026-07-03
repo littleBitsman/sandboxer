@@ -37,7 +37,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 	**It is highly recommended to read the [Introduction](/docs/intro) before reading the API documentation.**
 ]=]
-local Sandboxer = {}
+const Sandboxer = {}
 
 --[=[
 	@within Sandboxer
@@ -49,37 +49,32 @@ local Sandboxer = {}
 ]=]
 Sandboxer.Config = require("@self/Config")
 
-local __METATABLE = "No."
-local InstanceSandboxer = require("@self/InstanceSandboxer")
-local InstanceList = require("@self/InstanceList")
+const __METATABLE = "No."
+const InstanceSandboxer = require("@self/InstanceSandboxer")
+const InstanceList = require("@self/InstanceList")
 
-local GAME_SANDBOXED = InstanceSandboxer.wrapInstance(game)
-local WORKSPACE_SANDBOXED = InstanceSandboxer.wrapInstance(workspace)
+const GAME_SANDBOXED = InstanceSandboxer.wrapInstance(game)
+const WORKSPACE_SANDBOXED = InstanceSandboxer.wrapInstance(workspace)
 
 -- TODO: any way to get around deoptimization because of this? (and getfenv/setfenv below?)
-local LOADSTRING_ENABLED = pcall(loadstring, "return nil")
+const LOADSTRING_ENABLED = pcall(loadstring, "return nil")
 
 -- Thank you roblox, very cool! (deprecation warnings - WHO CARES)
-local getfenv, setfenv = getfenv, setfenv
-local _ENV = getfenv(0)
-local version, elapsedTime do
-	-- little hack to make these not be annoying
+const getfenv, setfenv = getfenv, setfenv
+const _ENV = getfenv(0)
+const version, elapsedTime = {_ENV.version, _ENV.Version}, {_ENV.elapsedTime, _ENV.ElapsedTime}
 
-	version = {_ENV.version, _ENV.Version}
-	elapsedTime = {_ENV.elapsedTime, _ENV.ElapsedTime}
-end
-
-local function nope(): never
+const function nope(): never
 	error("attempt to read missing field", 0)
 end
 
-local function xpcallIsBad(...: any): never
+const function xpcallIsBad(...: any): never
 	error("xpcall is disabled, use pcall instead", 2)
 end
 
-local STRING_RESOLVER_PATTERN = "([^/]+)/?"
-local function ResolveStringPath(mod: Instance, str: string): Instance?
-	local iter = str:gmatch(STRING_RESOLVER_PATTERN)
+const STRING_RESOLVER_PATTERN = "([^/]+)/?"
+const function ResolveStringPath(mod: Instance, str: string): Instance?
+	const iter = str:gmatch(STRING_RESOLVER_PATTERN)
 	local currentInstance: Instance? do
 		local first = iter()
 		if first == "." then
@@ -107,9 +102,9 @@ local function ResolveStringPath(mod: Instance, str: string): Instance?
 	return currentInstance
 end
 
-local realrequire = require
+const realrequire = require
 -- The real caller is level 3 (1 = SafeRequire, 2 = _require, 3 = caller of _require)
-local function SafeRequire(module: (Instance | string | number)?, caller: Instance): any
+const function SafeRequire(module: (Instance | string | number)?, caller: Instance): any
 	if typeof(module) == "string" then
 		if not caller then
 			error(`Unable to require module from given path '{module}'`, 3)
@@ -128,7 +123,7 @@ local function SafeRequire(module: (Instance | string | number)?, caller: Instan
 end
 
 -- Returns highest available environment, and its level relative to this function's caller.
-local function GetHighestEnv(): ({ [string]: any }, number, (...any) -> ...any)
+const function GetHighestEnv(): ({ [string]: any }, number, (...any) -> ...any)
 	local i = 0
 	while true do
 		local ok, env = pcall(getfenv, i)
@@ -141,7 +136,7 @@ local function GetHighestEnv(): ({ [string]: any }, number, (...any) -> ...any)
 	return getfenv(fn), i - 3, fn
 end
 
-local function CheckForActor(caller: Script?)
+const function CheckForActor(caller: Script?)
 	local sc: Script?
 	if not caller then
 		sc = GetHighestEnv().script
@@ -154,7 +149,7 @@ local function CheckForActor(caller: Script?)
 	end
 end
 
-local ForbiddenGlobals: { [any]: boolean } = {
+const ForbiddenGlobals: { [any]: boolean } = {
 	[getfenv] = true,
 	[setfenv] = true,
 	[loadstring] = true,
@@ -163,7 +158,7 @@ local ForbiddenGlobals: { [any]: boolean } = {
 	[debug.info] = true,
 	[debug.traceback] = true
 }
-local SANDBOX_CONFIG: { [string]: any } = {}
+const SANDBOX_CONFIG: { [string]: any } = {}
 
 --[=[
 	@within Sandboxer
@@ -229,9 +224,9 @@ function Sandboxer.EditDefaultSandbox(config: { [string]: any }): boolean
 	return success
 end
 
-local SENTRY = game:GetService("HttpService"):GenerateGUID(false)
-local IS_SANDBOXED_REF = newproxy(true) do
-	local mt = getmetatable(IS_SANDBOXED_REF)
+const SENTRY = game:GetService("HttpService"):GenerateGUID(false)
+const IS_SANDBOXED_REF = newproxy(true) do
+	const mt = getmetatable(IS_SANDBOXED_REF)
 	mt.__index = function(self, k): any
 		if self == IS_SANDBOXED_REF and k == SENTRY then
 			return SENTRY
@@ -269,14 +264,13 @@ end
 ]=]
 function Sandboxer:Init()	
 	setfenv(0, _ENV) -- just in case something tampered with it; setfenv is localized
-	local CallingFenv, LEVEL = GetHighestEnv()
+	const CallingFenv, LEVEL = GetHighestEnv()
 	CheckForActor(CallingFenv.script)
 	if getmetatable(CallingFenv :: any) == IS_SANDBOXED_REF then
 		return
 	end
 
-	local theFunction = debug.info(LEVEL, "f")
-
+	const theFunction = debug.info(LEVEL, "f")
 	Sandboxer:Sandbox(theFunction)
 end
 
@@ -307,7 +301,7 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 		fn = fnOrLevel
 	end
 
-	local IsValid, CallingFenv = pcall(getfenv, fn)
+	const IsValid, CallingFenv = pcall(getfenv, fn)
 	if not IsValid then
 		error("invalid level or function", 2)
 	end
@@ -315,16 +309,16 @@ function Sandboxer:Sandbox(fnOrLevel: InstanceSandboxer.AnyFn | number)
 	if getmetatable(CallingFenv :: any) == IS_SANDBOXED_REF then
 		return
 	end
-	local CallingScript = CallingFenv.script
+	const CallingScript = CallingFenv.script
 
-	local function _require(a: any)
+	const function _require(a: any)
 		return SafeRequire(a, CallingScript)
 	end
 
-	local self_G = {}
+	const self_G = {}
 
 	-- Big boi
-	local fenv = {
+	const fenv = {
 		game = GAME_SANDBOXED,
 		Game = GAME_SANDBOXED,
 		workspace = WORKSPACE_SANDBOXED,
@@ -462,7 +456,7 @@ end
 function Sandboxer:SandboxString(src: string, chunkname: string): InstanceSandboxer.AnyFn
 	setfenv(0, _ENV) -- just in case something tampered with it; setfenv is localized
 	if LOADSTRING_ENABLED then
-		local success, fn: InstanceSandboxer.AnyFn?, luaError: string? = pcall(loadstring, src, chunkname)
+		const success, fn: InstanceSandboxer.AnyFn?, luaError: string? = pcall(loadstring, src, chunkname)
 
 		if not success then
 			-- fn is the error
@@ -506,7 +500,7 @@ Sandboxer.InstanceList = InstanceList
 
 -- allow HttpService methods like GenerateGUID and JSON functions, but disallow network with hooks
 do
-	local HttpService = game:GetService("HttpService")
+	const HttpService = game:GetService("HttpService")
 	InstanceList.Allow[HttpService] = false -- can still be disabled by ExplicitDisallow
 	InstanceSandboxer.hookMetamethod(HttpService, "__index", function(oldIndex, self: Instance, key: string)
 		if key == "GetAsync" or key == "PostAsync" or key == "RequestAsync" or key == "GetSecret" then
@@ -520,7 +514,7 @@ end
 
 -- disable Players' BanAsync and UnbanAsync by default
 do
-	local Players = game:GetService("Players")
+	const Players = game:GetService("Players")
 	InstanceSandboxer.hookMetamethod(Players, "__index", function(oldIndex, self: Instance, key: string)
 		if key == "BanAsync" or key == "UnbanAsync" then
 			return function(...)
@@ -533,7 +527,7 @@ end
 
 -- disable BadgeService's AwardBadge and AwardBadgeAsync by default
 do
-	local BadgeService = game:GetService("BadgeService")
+	const BadgeService = game:GetService("BadgeService")
 	InstanceSandboxer.hookMetamethod(BadgeService, "__index", function(oldIndex, self: Instance, key: string)
 		if key == "AwardBadge" or key == "AwardBadgeAsync" then
 			return function(...)
