@@ -30,10 +30,10 @@ debug.setmemorycategory("Sandboxer")
 	You can use this to check if an `Instance` is allowed or disallowed in the sandbox,
 	or if an `Instance` or `RBXScriptSignal` is wrapped or not.
 ]=]
-local InstanceList = {}
-local SandboxRoot = script.Parent :: Instance
+const InstanceList = {}
+const SandboxRoot = script.Parent :: Instance
 
-local DisallowedClasses: {string} = {}
+const DisallowedClasses: {string} = {}
 --[=[
 	@within InstanceList
 	@prop DisallowedClasses {string}
@@ -53,7 +53,7 @@ local DisallowedClasses: {string} = {}
 ]=]
 InstanceList.DisallowedClasses = DisallowedClasses
 
-local ForbiddenClasses: {string} = {}
+const ForbiddenClasses: {string} = {}
 --[=[
 	@within InstanceList
 	@prop ForbiddenClasses {string}
@@ -77,7 +77,7 @@ local ForbiddenClasses: {string} = {}
 InstanceList.ForbiddenClasses = ForbiddenClasses
 
 -- [Instance]: AllowDescendants (if true, only the specific Instance is blacklisted)
-local ExplicitDisallow: { [Instance]: boolean } = {
+const ExplicitDisallow: { [Instance]: boolean } = {
 	[game:GetService("DataStoreService")] = false,
 	[game:GetService("MemoryStoreService")] = false,
 	[game:GetService("MessagingService")] = false,
@@ -109,7 +109,7 @@ local ExplicitDisallow: { [Instance]: boolean } = {
 InstanceList.ExplicitDisallow = ExplicitDisallow
 
 -- [Instance]: AllowDescendants (if false, only the specific Instance is whitelisted)
-local Allow: { [Instance]: boolean } = {
+const Allow: { [Instance]: boolean } = {
 	[game] = false,
 	[workspace] = true,
 	[game:GetService("Lighting")] = true,
@@ -179,13 +179,13 @@ function InstanceList.instanceAllowed(inst: Instance): boolean
 	return inst.Parent == nil and inst ~= game
 end
 
-local WEAK_KEY_METATABLE = { __mode = "k" }
-local WRAPPED: { [Instance]: any } = setmetatable({}, WEAK_KEY_METATABLE) :: any
-local UNWRAP: { [any]: Instance } = setmetatable({}, WEAK_KEY_METATABLE) :: any
+const WEAK_KEY_METATABLE = { __mode = "k" }
+const WRAPPED: { [Instance]: any } = setmetatable({}, WEAK_KEY_METATABLE) :: any
+const UNWRAP: { [any]: Instance } = setmetatable({}, WEAK_KEY_METATABLE) :: any
 InstanceList.WRAPPED, InstanceList.UNWRAP = WRAPPED, UNWRAP
 
-local WRAPPED_SIGNALS: { [RBXScriptSignal]: any } = setmetatable({}, WEAK_KEY_METATABLE) :: any
-local UNWRAP_SIGNALS: { [any]: RBXScriptSignal } = setmetatable({}, WEAK_KEY_METATABLE) :: any
+const WRAPPED_SIGNALS: { [RBXScriptSignal]: any } = setmetatable({}, WEAK_KEY_METATABLE) :: any
+const UNWRAP_SIGNALS: { [any]: RBXScriptSignal } = setmetatable({}, WEAK_KEY_METATABLE) :: any
 InstanceList.WRAPPED_SIGNALS, InstanceList.UNWRAP_SIGNALS = WRAPPED_SIGNALS, UNWRAP_SIGNALS
 
 --[=[
