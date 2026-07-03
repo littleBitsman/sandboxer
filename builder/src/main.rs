@@ -248,6 +248,7 @@ fn stream_and_print_logs(cli: &Client, api_key: &str, id: &str) {
                 {
                     continue;
                 }
+
                 match entry.message_type {
                     LogMessageType::Error => error!(time = entry.create_time; "{}", entry.message),
                     LogMessageType::Warning => warn!(time = entry.create_time; "{}", entry.message),
@@ -327,9 +328,10 @@ mod tests {
 
     #[cfg(test)]
     #[test]
-    #[should_panic = "explicit"]
+    #[should_panic = "BRuh"]
     fn br() {
         set_panic_hook(Box::new(panic_hook));
+        println!("[{:24} OUTPUT]", "hlelo");
         fprint!("Hello!");
         warn!("idk");
         error!("oops");
@@ -337,7 +339,7 @@ mod tests {
         debug!("debugging");
 
         debug!("Done, {}, stuff after", fmt!(RED BOLD => "Hello!"));
-        fprint!(time = fmt!(RED BOLD UNDERLINE => "Bruh this is DEFINITELY not a time"); "Bruh.");
+        fprint!(time = "Bruh"; "Bruh.");
         // std::panic::set_hook(Box::new(|_| std::process::exit(101)));
         panic!("BRuh");
     }
