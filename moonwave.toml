@@ -13,7 +13,9 @@ classOrder = [
 url = "https://littlebitsman.dev"
 baseUrl = "/sandboxer"
 onBrokenLinks = "throw"
-onBrokenMarkdownLinks = "warn"
+
+[docusaurus.markdown.hooks]
+onBrokenMarkdownLinks = "throw"
 
 [footer]
 style = "dark"
