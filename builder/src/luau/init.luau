@@ -34,7 +34,8 @@ for _, moduleName in script.tests:GetChildren() do
 	local success, err = pcall(require, moduleName)
 
 	if not success then
-		warn(`Failed to load test module '{moduleName}': {err}`)
+		-- Fail immediately: there was likely a breaking change
+		error(`Failed to load test module '{moduleName}': {err}`)
 	else
 		totalSuites += 1
 	end
