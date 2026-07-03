@@ -288,9 +288,7 @@ describe("Integration - Security Bypass Attempts", function()
 	it("should prevent metatable manipulation to escape sandbox", function()
 		local testFn = function()
 			local t = {}
-			local success, result = pcall(function()
-				return getmetatable(t)
-			end)
+			local success, result = pcall(getmetatable, t :: any)
 			return success and result ~= nil
 		end
 
