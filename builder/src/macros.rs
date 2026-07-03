@@ -105,10 +105,10 @@ macro_rules! fmt {
 
 macro_rules! fprint {
     () => {
-        eprintln!(concat!("[{} ", fmt!(WHITE BOLD => "OUTPUT"), "]"), $crate::macros::get_iso8601())
+        eprintln!(concat!("[{:24} ", fmt!(WHITE BOLD => "OUTPUT"), "]"), $crate::macros::get_iso8601())
     };
     (time = $expr:expr; $($tt:tt)*) => {
-        eprintln!(concat!("[{} ", fmt!(WHITE BOLD => "OUTPUT"), "] {}"), $expr, format_args!($($tt)*))
+        eprintln!(concat!("[{:24} ", fmt!(WHITE BOLD => "OUTPUT"), "] {}"), $expr, format_args!($($tt)*))
     };
     ($($tt:tt)*) => {
         fprint!(time = $crate::macros::get_iso8601(); $($tt)*)
@@ -117,10 +117,10 @@ macro_rules! fprint {
 
 macro_rules! warn {
     () => {
-        eprintln!(concat!("[{} ", fmt!(YELLOW BOLD => "WARN  "), "]"), $crate::macros::get_iso8601())
+        eprintln!(concat!("[{:24} ", fmt!(YELLOW BOLD => "WARN  "), "]"), $crate::macros::get_iso8601())
     };
     (time = $expr:expr; $($tt:tt)*) => {
-        eprintln!(concat!("[{} ", fmt!(YELLOW BOLD => "WARN  "), "] {}"), $expr, format_args!($($tt)*))
+        eprintln!(concat!("[{:24} ", fmt!(YELLOW BOLD => "WARN  "), "] {}"), $expr, format_args!($($tt)*))
     };
     ($($tt:tt)*) => {
         warn!(time = $crate::macros::get_iso8601(); $($tt)*)
@@ -129,10 +129,10 @@ macro_rules! warn {
 
 macro_rules! error {
     () => {
-        eprintln!(concat!("[{} ", fmt!(RED BOLD => "ERROR "), "]"), $crate::macros::get_iso8601())
+        eprintln!(concat!("[{:24} ", fmt!(RED BOLD => "ERROR "), "]"), $crate::macros::get_iso8601())
     };
     (time = $expr:expr; $($tt:tt)*) => {
-        eprintln!(concat!("[{} ", fmt!(RED BOLD => "ERROR "), "] {}"), $expr, format_args!($($tt)*))
+        eprintln!(concat!("[{:24} ", fmt!(RED BOLD => "ERROR "), "] {}"), $expr, format_args!($($tt)*))
     };
     ($($tt:tt)*) => {
         error!(time = $crate::macros::get_iso8601(); $($tt)*)
@@ -141,10 +141,10 @@ macro_rules! error {
 
 macro_rules! fatal {
     () => {
-        eprintln!(concat!("[{} ", fmt!(RED REVERSE BOLD => "FATAL!"), "]"), $crate::macros::get_iso8601())
+        eprintln!(concat!("[{:24} ", fmt!(RED REVERSE BOLD => "FATAL!"), "]"), $crate::macros::get_iso8601())
     };
     (time = $expr:expr; $($tt:tt)*) => {
-        eprintln!(concat!("[{} ", fmt!(RED REVERSE BOLD => "FATAL!"), "] {}"), $expr, format_args!($($tt)*))
+        eprintln!(concat!("[{:24} ", fmt!(RED REVERSE BOLD => "FATAL!"), "] {}"), $expr, format_args!($($tt)*))
     };
     ($($tt:tt)*) => {
         fatal!(time = $crate::macros::get_iso8601(); $($tt)*)
@@ -153,10 +153,10 @@ macro_rules! fatal {
 
 macro_rules! info {
     () => {
-        eprintln!(concat!("[{} ", fmt!(CYAN BOLD => "INFO  "), "]"), $crate::macros::get_iso8601())
+        eprintln!(concat!("[{:24} ", fmt!(CYAN BOLD => "INFO  "), "]"), $crate::macros::get_iso8601())
     };
     (time = $expr:expr; $($tt:tt)*) => {
-        eprintln!(concat!("[{} ", fmt!(CYAN BOLD => "INFO  "), "] {}"), $expr, format_args!($($tt)*))
+        eprintln!(concat!("[{:24} ", fmt!(CYAN BOLD => "INFO  "), "] {}"), $expr, format_args!($($tt)*))
     };
     ($($tt:tt)*) => {
         info!(time = $crate::macros::get_iso8601(); $($tt)*)
@@ -165,10 +165,10 @@ macro_rules! info {
 
 macro_rules! debug {
     () => {
-        eprintln!(concat!("[{} ", fmt!(MAGENTA BOLD => "DEBUG "), "]"), $crate::macros::get_iso8601())
+        eprintln!(concat!("[{:24} ", fmt!(MAGENTA BOLD => "DEBUG "), "]"), $crate::macros::get_iso8601())
     };
     (time = $expr:expr; $($tt:tt)*) => {
-        eprintln!(concat!("[{} ", fmt!(MAGENTA BOLD => "DEBUG "), "] {}"), $expr, format_args!($($tt)*))
+        eprintln!(concat!("[{:24} ", fmt!(MAGENTA BOLD => "DEBUG "), "] {}"), $expr, format_args!($($tt)*))
     };
     ($($tt:tt)*) => {
         debug!(time = $crate::macros::get_iso8601(); $($tt)*)
