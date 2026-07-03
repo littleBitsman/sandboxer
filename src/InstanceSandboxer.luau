@@ -31,12 +31,14 @@ debug.setmemorycategory("Sandboxer")
 
 	A class for wrapping and unwrapping `Instance`s and `RBXScriptSignal`s.
 ]=]
-local InstanceSandboxer = {}
+const InstanceSandboxer = {}
 
-local Config = require("./Config")
-local InstanceList = require("./InstanceList")
-local WRAPPED, UNWRAP = InstanceList.WRAPPED, InstanceList.UNWRAP
-local WRAPPED_SIGNALS, UNWRAP_SIGNALS = InstanceList.WRAPPED_SIGNALS, InstanceList.UNWRAP_SIGNALS
+const Config = require("./Config")
+const InstanceList = require("./InstanceList")
+const WRAPPED, UNWRAP = InstanceList.WRAPPED, InstanceList.UNWRAP
+const WRAPPED_SIGNALS, UNWRAP_SIGNALS = InstanceList.WRAPPED_SIGNALS, InstanceList.UNWRAP_SIGNALS
+
+const Signal = require("./Signal")
 
 --[=[
 	@within InstanceSandboxer
@@ -103,11 +105,23 @@ InstanceSandboxer.Instances = setmetatable({} :: any, { __mode = "k" }) :: { [In
 ]=]
 InstanceSandboxer.NewInstances = setmetatable({} :: any, { __mode = "k" }) :: { [Instance]: true }
 
-local function attemptAddInstance(inst, fromInstanceConstructor: boolean?): Instance
+local InstanceCreatedSignal: Signal.Signal<Instance> = Signal.new()
+--[=[
+	@within InstanceSandboxer
+	@prop InstanceCreated RBXScriptSignal<Instance>
+	@readonly
+	@tag Advanced
+
+	A signal that is fired when an `Instance` is created in the sandbox.
+]=]
+InstanceSandboxer.InstanceCreated = (InstanceCreatedSignal :: any) :: RBXScriptSignal<Instance>
+
+const function attemptAddInstance(inst, fromInstanceConstructor: boolean?): Instance
 	if Config.TrackInstances then
 		InstanceSandboxer.Instances[inst] = true
 		if fromInstanceConstructor then
 			InstanceSandboxer.NewInstances[inst] = true
+			InstanceCreatedSignal:Fire(inst)
 		end
 	end
 	return inst :: typeof(inst)
@@ -138,7 +152,7 @@ end
 	```
 ]=]
 InstanceSandboxer.RBXScriptConnections = setmetatable({} :: any, { __mode = "k" }) :: { [RBXScriptConnection]: true }
-local function attemptAddConnection(conn: RBXScriptConnection): RBXScriptConnection
+const function attemptAddConnection(conn: RBXScriptConnection): RBXScriptConnection
 	if Config.TrackRBXScriptConnections then
 		InstanceSandboxer.RBXScriptConnections[conn] = true
 	end
@@ -179,7 +193,7 @@ end
 export type AnyFn = (...any) -> ...any
 local METHOD_CACHE: { [AnyFn]: AnyFn } = setmetatable({}, { __mode = "k" }) :: any
 
-local function _compareKeys(a: any, b: any)
+const function compareKeys(a: any, b: any)
 	return a.key < b.key
 end
 
@@ -207,7 +221,7 @@ function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, f
 
 	local ty = typeof(v)
 	if ty == "Instance" then
-		local wrapped = InstanceSandboxer.wrapInstance(v)
+		local wrapped = InstanceSandboxer.wrapInstance(v, false)
 		visited[v] = wrapped
 		return wrapped
 	elseif ty == "RBXScriptSignal" then
@@ -232,7 +246,7 @@ function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, f
 			end
 		end
 
-		table.sort(numerics, _compareKeys)
+		table.sort(numerics, compareKeys)
 		for _, entry in numerics do
 			if entry.val ~= nil then
 				table.insert(new, entry.val)
@@ -252,6 +266,7 @@ function InstanceSandboxer.deepWrap(v: any, instance: Instance?, key: string?, f
 		return v
 	end
 end
+
 --[=[
 	@within InstanceSandboxer
 	@tag Advanced
@@ -295,7 +310,7 @@ function InstanceSandboxer.deepUnwrap(v: any, freeze: boolean?, pvisited: { [any
 			end
 		end
 
-		table.sort(numerics, _compareKeys)
+		table.sort(numerics, compareKeys)
 		for _, entry in numerics do
 			if entry.val ~= nil then
 				table.insert(new, entry.val)
@@ -408,10 +423,10 @@ function InstanceSandboxer.reverseWrapFn(fn: AnyFn): AnyFn
 end
 
 -- Avoids creating closures
-local function get(t: any, k: string)
+const function get(t: any, k: string)
 	return t[k]
 end
-local function set(t: any, k: string, v: any)
+const function set(t: any, k: string, v: any)
 	t[k] = v
 end
 
@@ -427,15 +442,15 @@ end
 	Remaining arguments are the arguments passed to the metamethod at invocation.
 ]=]
 export type MetamethodHook = (fn: (Instance, ...any) -> ...any, inst: any, ...any) -> ...any
-local INST_METAMETHOD_HOOKS: { [Instance]: { [string]: MetamethodHook } } = setmetatable({}, { 
+const INST_METAMETHOD_HOOKS: { [Instance]: { [string]: MetamethodHook } } = setmetatable({}, { 
 	__index = function(self, k)
 		self[k] = {}
 		return self[k] -- will not stack overflow since __index is only called when the key does not exist
 	end,
 	__mode = "k" 
 }) :: any
-local DEFAULT_METATABLE = {} do
-	local function check(a: any, requireInstance: boolean?): any
+const DEFAULT_METATABLE = {} do
+	const function check(a: any, requireInstance: boolean?): any
 		if rawequal(WRAPPED[UNWRAP[a]], a) then
 			return UNWRAP[a]
 		elseif not requireInstance and rawequal(WRAPPED_SIGNALS[UNWRAP_SIGNALS[a]], a) then
@@ -445,9 +460,9 @@ local DEFAULT_METATABLE = {} do
 		end
 	end
 
-	local function internalIndex(inst: Instance, key: any): any
+	const function internalIndex(inst: Instance, key: any): any
 		key = InstanceSandboxer.deepUnwrap(key)
-		local success, value = pcall(get, inst, key)
+		const success, value = pcall(get, inst, key)
 
 		if not success then
 			-- value contains the error message
@@ -467,19 +482,19 @@ local DEFAULT_METATABLE = {} do
 		return InstanceSandboxer.deepWrap(value, inst, key)
 	end
 	DEFAULT_METATABLE.__index = function(self: any, key: any): any
-		local inst: Instance = check(self, true)
+		const inst: Instance = check(self, true)
 
-		local metamethodHook = INST_METAMETHOD_HOOKS[inst].__index
+		const metamethodHook = INST_METAMETHOD_HOOKS[inst].__index
 		if metamethodHook then
 			return metamethodHook(internalIndex, self, key)
 		end
 		return internalIndex(inst, key)
 	end
 
-	local function internalNewindex(inst: Instance, key: any, value: any)
+	const function internalNewindex(inst: Instance, key: any, value: any)
 		key = InstanceSandboxer.deepUnwrap(key)
 		value = InstanceSandboxer.deepUnwrap(value)
-		local success, rawerr: string? = pcall(set, inst, key, value)
+		const success, rawerr: string? = pcall(set, inst, key, value)
 		if not success then
 			error(tostring(rawerr), 3)
 			--[[
@@ -494,9 +509,9 @@ local DEFAULT_METATABLE = {} do
 		end
 	end
 	DEFAULT_METATABLE.__newindex = function(self: any, key: any, value: any)
-		local inst: Instance = check(self, true)
+		const inst: Instance = check(self, true)
 
-		local metamethodHook = INST_METAMETHOD_HOOKS[inst].__newindex
+		const metamethodHook = INST_METAMETHOD_HOOKS[inst].__newindex
 		if metamethodHook then
 			return metamethodHook(internalNewindex, self, key, value)
 		end
@@ -504,9 +519,9 @@ local DEFAULT_METATABLE = {} do
 	end
 
 	DEFAULT_METATABLE.__tostring = function(self: any)
-		local internalSelf = check(self)
+		const internalSelf = check(self)
 		if typeof(internalSelf) == "Instance" then
-			local metamethodHook = INST_METAMETHOD_HOOKS[internalSelf].__tostring
+			const metamethodHook = INST_METAMETHOD_HOOKS[internalSelf].__tostring
 			if metamethodHook then
 				return metamethodHook(tostring, self)
 			end
@@ -514,14 +529,14 @@ local DEFAULT_METATABLE = {} do
 		return tostring(internalSelf)
 	end
 
-	local function internalEquals(internalSelf: any, rhs: any): boolean
-		local self = WRAPPED[internalSelf] or WRAPPED_SIGNALS[internalSelf]
+	const function internalEquals(internalSelf: any, rhs: any): boolean
+		const self = WRAPPED[internalSelf] or WRAPPED_SIGNALS[internalSelf]
 		return internalSelf == InstanceSandboxer.unwrap(rhs) and rawequal(self, rhs)
 	end
 	DEFAULT_METATABLE.__eq = function(self: any, rhs: any)
-		local internalSelf = check(self)
+		const internalSelf = check(self)
 		if typeof(internalSelf) == "Instance" then
-			local metamethodHook = INST_METAMETHOD_HOOKS[internalSelf].__eq
+			const metamethodHook = INST_METAMETHOD_HOOKS[internalSelf].__eq
 			if metamethodHook then
 				return metamethodHook(internalEquals, self, rhs)
 			end
@@ -529,13 +544,13 @@ local DEFAULT_METATABLE = {} do
 		return internalEquals(internalSelf, rhs)
 	end
 
-	local function internalCall(internalSelf: any, ...: any): never
+	const function internalCall(internalSelf: any, ...: any): never
 		error(`attempt to call a {InstanceSandboxer.typeof(internalSelf)} value`, 3)
 	end
 	DEFAULT_METATABLE.__call = function(self, ...)
-		local internalSelf = check(self)
+		const internalSelf = check(self)
 		if typeof(internalSelf) == "Instance" then
-			local metamethodHook = INST_METAMETHOD_HOOKS[internalSelf].__call
+			const metamethodHook = INST_METAMETHOD_HOOKS[internalSelf].__call
 			if metamethodHook then
 				return metamethodHook(internalCall, self, ...)
 			end
@@ -543,13 +558,13 @@ local DEFAULT_METATABLE = {} do
 		return internalCall(internalSelf, ...)
 	end
 
-	local function internalConcat(internalSelf: any, v: any): never
+	const function internalConcat(internalSelf: any, v: any): never
 		error(`attempt to concatenate {InstanceSandboxer.typeof(internalSelf)} with {InstanceSandboxer.typeof(v)}`, 3)
 	end
 	DEFAULT_METATABLE.__concat = function(self, v)
-		local internalSelf = check(self)
+		const internalSelf = check(self)
 		if typeof(internalSelf) == "Instance" then
-			local metamethodHook = INST_METAMETHOD_HOOKS[internalSelf].__concat
+			const metamethodHook = INST_METAMETHOD_HOOKS[internalSelf].__concat
 			if metamethodHook then
 				return metamethodHook(internalConcat, self, v)
 			end
@@ -558,17 +573,17 @@ local DEFAULT_METATABLE = {} do
 	end
 
 	for _, math in MATH do
-		local mtName = `__{math}`
-		local function internalMath(internalSelf: any, rhs: any): never
+		const mtName = `__{math}`
+		const function internalMath(internalSelf: any, rhs: any): never
 			error(`attempt to perform arithmetic ({math}) on {InstanceSandboxer.typeof(internalSelf)}` 
 				.. (InstanceSandboxer.typeof(rhs) ~= "Instance" and ` and {InstanceSandboxer.typeof(rhs)}` or ""), 
 				3
 			)
 		end
 		DEFAULT_METATABLE[mtName] = function(self, rhs)
-			local internalSelf = check(self)
+			const internalSelf = check(self)
 			if typeof(internalSelf) == "Instance" then
-				local metamethodHook = INST_METAMETHOD_HOOKS[internalSelf][mtName]
+				const metamethodHook = INST_METAMETHOD_HOOKS[internalSelf][mtName]
 				if metamethodHook then
 					return metamethodHook(internalMath, self, rhs)
 				end
@@ -577,16 +592,16 @@ local DEFAULT_METATABLE = {} do
 		end
 	end
 
-	local function internalLt(lhs: any, rhs: any): never
+	const function internalLt(lhs: any, rhs: any): never
 		error(
 			`attempt to compare {InstanceSandboxer.typeof(lhs)} < {InstanceSandboxer.typeof(rhs)}`,
 			3
 		)
 	end
 	DEFAULT_METATABLE.__lt = function(lhs, rhs)
-		local internalLhs = check(lhs)
+		const internalLhs = check(lhs)
 		if typeof(internalLhs) == "Instance" then
-			local metamethodHook = INST_METAMETHOD_HOOKS[internalLhs].__lt
+			const metamethodHook = INST_METAMETHOD_HOOKS[internalLhs].__lt
 			if metamethodHook then
 				return metamethodHook(internalLt, lhs, rhs)
 			end
@@ -594,16 +609,16 @@ local DEFAULT_METATABLE = {} do
 		return internalLt(lhs, rhs)
 	end
 
-	local function internalLe(lhs: any, rhs: any): never
+	const function internalLe(lhs: any, rhs: any): never
 		error(
 			`attempt to compare {InstanceSandboxer.typeof(lhs)} <= {InstanceSandboxer.typeof(rhs)}`,
 			3
 		)
 	end
 	DEFAULT_METATABLE.__le = function(lhs, rhs)
-		local internalLhs = check(lhs)
+		const internalLhs = check(lhs)
 		if typeof(internalLhs) == "Instance" then
-			local metamethodHook = INST_METAMETHOD_HOOKS[internalLhs].__le
+			const metamethodHook = INST_METAMETHOD_HOOKS[internalLhs].__le
 			if metamethodHook then
 				return metamethodHook(internalLe, lhs, rhs)
 			end
@@ -611,7 +626,7 @@ local DEFAULT_METATABLE = {} do
 		return internalLe(lhs, rhs)
 	end
 
-	local function internalLen(self: any): never
+	const function internalLen(self: any): never
 		error(`attempt to get length of a {InstanceSandboxer.typeof(self)} value`, 3)
 	end
 	DEFAULT_METATABLE.__len = function(self)
@@ -642,7 +657,7 @@ local DEFAULT_METATABLE = {} do
 	DEFAULT_METATABLE.__metatable = LOCKED
 end
 
-local SIGNAL_WRAPPER = {
+const SIGNAL_WRAPPER = {
 	Connect = function(...)
 		local self: any, cb: (...any) -> () = InstanceSandboxer.requireArguments(1, "Connect", {"RBXScriptSignal"}, ...)
 		local signal = InstanceSandboxer.unwrap(self) :: RBXScriptSignal
@@ -680,7 +695,7 @@ local SIGNAL_WRAPPER = {
 -- Support legacy names
 SIGNAL_WRAPPER.connect, SIGNAL_WRAPPER.once, SIGNAL_WRAPPER.wait, SIGNAL_WRAPPER.connectParallel = 
 	SIGNAL_WRAPPER.Connect, SIGNAL_WRAPPER.Once, SIGNAL_WRAPPER.Wait, SIGNAL_WRAPPER.ConnectParallel
-local SIGNAL_INDEX_METAMETHOD = function(self: any, k: any)
+const SIGNAL_INDEX_METAMETHOD = function(self: any, k: any)
 	local fn = SIGNAL_WRAPPER[k]
 	if fn then
 		return fn
@@ -774,7 +789,7 @@ function InstanceSandboxer.requireArguments(count: number, fn: string, types: {s
 	local n = select("#", ...)
 	if n < count then
 		error(`missing argument #{n + 1}` 
-			.. ((types and types[n + 1]) and ` to '{fn}' ({types[n + 1]} expected)` or ""), 
+			.. (if (types and types[n + 1]) then ` to '{fn}' ({types[n + 1]} expected)` else ""), 
 			3
 		)
 	end
@@ -791,7 +806,7 @@ end
 -- just make a singular locked one!
 InstanceSandboxer.InstanceGlobal = table.freeze {
 	new = function(...: string | Instance): any
-		local class, parent = InstanceSandboxer.requireArguments(1, "new", {"string"}, ...)
+		const class, parent = InstanceSandboxer.requireArguments(1, "new", {"string"}, ...)
 		InstanceSandboxer.requireType(class, "string", `invalid argument #1 to 'new' (string expected, got {InstanceSandboxer.typeof(class)}`)
 		if table.find(InstanceList.DisallowedClasses, class) then
 			return nil
@@ -806,8 +821,8 @@ InstanceSandboxer.InstanceGlobal = table.freeze {
 	end :: any,
 
 	fromExisting = function(...: Instance)
-		local wrappedInstance = InstanceSandboxer.requireArguments(1, "fromExisting", {"Instance"}, ...)	
-		local inst = InstanceSandboxer.unwrap(wrappedInstance) :: Instance
+		const wrappedInstance = InstanceSandboxer.requireArguments(1, "fromExisting", {"Instance"}, ...)	
+		const inst = InstanceSandboxer.unwrap(wrappedInstance) :: Instance
 		InstanceSandboxer.requireType(inst, "Instance", `invalid argument #1 to 'fromExisting' (Instance expected, got {InstanceSandboxer.typeof(wrappedInstance)}`)
 		if table.find(InstanceList.DisallowedClasses, inst.ClassName) then
 			return nil
@@ -823,7 +838,7 @@ METHOD_CACHE[Instance.fromExisting] = InstanceSandboxer.InstanceGlobal.fromExist
 -- They're all C functions, so GC isn't a problem
 -- Skips Enum (not iterable), SharedTable (security) and Secret (Secret = nil)
 do
-	local libs: {any} = {
+	const libs: {any} = {
 		bit32,
 		buffer,
 		coroutine,
@@ -880,7 +895,7 @@ end
 METHOD_CACHE[typeof] = InstanceSandboxer.typeof
 METHOD_CACHE[InstanceSandboxer.typeof] = InstanceSandboxer.typeof
 
-local function convertToMetamethodName(name: string): string
+const function convertToMetamethodName(name: string): string
 	if typeof(name) ~= "string" then
 		return tostring(name)
 	end
