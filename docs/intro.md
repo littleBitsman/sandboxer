@@ -28,7 +28,7 @@ Due to the way this module works (internally, it uses `getfenv` and `setfenv`), 
 :::
 
 :::danger[Important!]
-If you find a security vulnerability or sandbox escape with the unmodified version of the module, please do not hesitate to DM me on DevForum or on Discord (littlebitsman)!
+If you find a security vulnerability or sandbox escape in the unmodified version of the module, please do not hesitate to DM me on DevForum or Discord at littlebitsman. **Please do not post vulnerabilities publicly.**
 :::
 
 ## API Tags
