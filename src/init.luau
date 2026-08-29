@@ -474,6 +474,29 @@ function Sandboxer:SandboxString(src: string, chunkname: string): InstanceSandbo
 	end
 end
 
+--[=[
+	@within Sandboxer
+	@tag Basic
+
+	Checks if the current function is being called from a sandboxed context
+	anywhere in the call stack. This is useful for determining if special
+	handling is required when a function is called from a sandboxed context.
+
+	@return boolean -- True if the current function is being called from a sandboxed context, false otherwise.
+]=]
+function Sandboxer:HasSandboxedCaller(): boolean
+	setfenv(0, _ENV) -- just in case something tampered with it; setfenv is localized
+	const _, level = GetHighestEnv()
+	for i = 1, level do
+		const fn = debug.info(i, "f")
+		const env = getfenv(fn) :: any
+		if env and getmetatable(env) == IS_SANDBOXED_REF then
+			return true
+		end
+	end
+	return false
+end
+
 Sandboxer.typeof = InstanceSandboxer.typeof
 
 --[=[
