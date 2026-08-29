@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     
     A module for configuring various aspects of the sandbox.
 ]=]
-local Config = {}
+const Config = {}
 
 --[=[
     @within Config
@@ -44,8 +44,8 @@ local Config = {}
     When this is `true`, the sandboxer will work as expected in 
     Actors, but it may cause performance issues and increased 
     memory usage. `task.synchronize()` and `task.desynchronize()` 
-    will work as usual, but errors regarding property sets while
-    in parallel mode might not make sense.
+    will work as usual, but errors regarding property sets or
+    method calls in parallel mode might not make sense.
 ]=]
 Config.AllowParallelLuau = false
 
