@@ -1,11 +1,11 @@
-local Sandboxer = require(game:GetService("ServerScriptService").Init)
+const Sandboxer = require(game:GetService("ServerScriptService").Init)
 
-local exampleFunction = function()
+const exampleFunction = function()
     print("Hello, world!")
     print(getfenv) -- nil
     print(debug) -- nil
 
-    local num = Instance.new("NumberValue")
+    const num = Instance.new("NumberValue")
     game:GetService("TweenService"):Create(num, TweenInfo.new(1), { Value = 2 }):Play()
 
     task.wait(2)

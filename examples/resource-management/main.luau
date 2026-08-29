@@ -1,19 +1,19 @@
 -- Make sure TrackInstances and TrackRBXScriptConnections are true
 -- before running this example!
 
-local Sandboxer = require(game:GetService("ServerScriptService").Init)
+const Sandboxer = require(game:GetService("ServerScriptService").Init)
 assert(
     Sandboxer.Config.TrackInstances and Sandboxer.Config.TrackRBXScriptConnections,
     "Please enable TrackInstances and TrackRBXScriptConnections in the Config module before running this example!"
 )
 
-local exampleFunction = function()
+const exampleFunction = function()
     -- any instances made in this sandboxed function will be tracked,
     -- as well as any connections!
 
-    local t = {}
+    const t = {}
     for i = 1, 100 do
-        local part = Instance.new("Part") -- tracked!
+        const part = Instance.new("Part") -- tracked!
         part.Position = Vector3.new(
             math.random(-100, 100),
             math.random(-100, 100),

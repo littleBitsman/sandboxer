@@ -11,12 +11,12 @@
 	- Edge cases and boundary conditions
 ]]
 
-local TestFramework = require("../TestFramework")
-local InstanceList = require("../../Sandboxer/InstanceList")
+const TestFramework = require("../TestFramework")
+const InstanceList = require("../../Sandboxer/InstanceList")
 
-local describe = TestFramework.describe
-local it = TestFramework.it
-local expect = TestFramework.expect
+const describe = TestFramework.describe
+const it = TestFramework.it
+const expect = TestFramework.expect
 
 describe("InstanceList - Allow/Disallow Logic", function()
 	it("should allow game instance", function()
@@ -27,39 +27,39 @@ describe("InstanceList - Allow/Disallow Logic", function()
 		expect(InstanceList.instanceAllowed(workspace)):toBe(true)
 
 		-- Create a part in workspace to test descendants
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 		expect(InstanceList.instanceAllowed(part)):toBe(true)
 		part:Destroy()
 	end)
 
 	it("should allow Lighting service", function()
-		local lighting = game:GetService("Lighting")
+		const lighting = game:GetService("Lighting")
 		expect(InstanceList.instanceAllowed(lighting)):toBe(true)
 	end)
 
 	it("should allow ReplicatedStorage service", function()
-		local replicatedStorage = game:GetService("ReplicatedStorage")
+		const replicatedStorage = game:GetService("ReplicatedStorage")
 		expect(InstanceList.instanceAllowed(replicatedStorage)):toBe(true)
 	end)
 
 	it("should allow TweenService but not its descendants", function()
-		local tweenService = game:GetService("TweenService")
+		const tweenService = game:GetService("TweenService")
 		expect(InstanceList.instanceAllowed(tweenService)):toBe(true)
 	end)
 
 	it("should disallow Players service by default", function()
-		local players = game:GetService("Players")
+		const players = game:GetService("Players")
 		expect(InstanceList.instanceAllowed(players)):toBe(false)
 	end)
 
 	it("should allow RunService but not its descendants", function()
-		local runService = game:GetService("RunService")
+		const runService = game:GetService("RunService")
 		expect(InstanceList.instanceAllowed(runService)):toBe(true)
 	end)
 
 	it("should disallow instances not in the allow list", function()
-		local serverScriptService = game:GetService("ServerScriptService")
+		const serverScriptService = game:GetService("ServerScriptService")
 		expect(InstanceList.instanceAllowed(serverScriptService)):toBe(false)
 	end)
 end)
@@ -76,11 +76,11 @@ describe("InstanceList - ForbiddenClasses", function()
 	it("should reject instances of forbidden classes", function()
 		-- Add a test forbidden class
 		table.insert(InstanceList.ForbiddenClasses, "Fire")
-		local forbiddenIndex = #InstanceList.ForbiddenClasses
+		const forbiddenIndex = #InstanceList.ForbiddenClasses
 
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
-		local fire = Instance.new("Fire")
+		const fire = Instance.new("Fire")
 		fire.Parent = part
 
 		expect(InstanceList.instanceAllowed(fire)):toBe(false)
@@ -97,7 +97,7 @@ describe("InstanceList - ExplicitDisallow", function()
 	end)
 
 	it("should disallow explicitly disallowed instances", function()
-		local testFolder = Instance.new("Folder")
+		const testFolder = Instance.new("Folder")
 		testFolder.Parent = workspace
 
 		-- Explicitly disallow this specific instance
@@ -111,9 +111,9 @@ describe("InstanceList - ExplicitDisallow", function()
 	end)
 
 	it("should allow descendants when ExplicitDisallow value is true", function()
-		local testFolder = Instance.new("Folder")
+		const testFolder = Instance.new("Folder")
 		testFolder.Parent = workspace
-		local childPart = Instance.new("Part")
+		const childPart = Instance.new("Part")
 		childPart.Parent = testFolder
 
 		-- Disallow folder but allow descendants
@@ -134,13 +134,13 @@ describe("InstanceList - Allow List", function()
 	end)
 
 	it("should properly handle allow list with descendants flag", function()
-		local testService = game:GetService("Lighting")
+		const testService = game:GetService("Lighting")
 
 		-- Lighting should be in allow list with descendants = true
 		expect(InstanceList.Allow[testService]):toBe(true)
 
 		-- Create a child to test descendant logic
-		local childObj = Instance.new("PointLight")
+		const childObj = Instance.new("PointLight")
 		childObj.Parent = testService
 
 		expect(InstanceList.instanceAllowed(childObj)):toBe(true)
@@ -156,7 +156,7 @@ describe("InstanceList - Wrapping/Unwrapping Instances", function()
 	end)
 
 	it("should correctly identify wrapped instances with isWrapped", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
 		-- Initially not wrapped
@@ -166,7 +166,7 @@ describe("InstanceList - Wrapping/Unwrapping Instances", function()
 	end)
 
 	it("should return nil for unwrapping non-wrapped values", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
 		expect(InstanceList.unwrap(part)):toBeNil()
@@ -175,7 +175,7 @@ describe("InstanceList - Wrapping/Unwrapping Instances", function()
 	end)
 
 	it("should correctly identify non-wrapped instances", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
 		expect(InstanceList.isWrapped(part)):toBe(false)
@@ -194,10 +194,10 @@ describe("InstanceList - Wrapping/Unwrapping Signals", function()
 	end)
 
 	it("should correctly identify non-wrapped signals", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
-		local signal = part.Changed
+		const signal = part.Changed
 		expect(InstanceList.isWrappedSignal(signal)):toBe(false)
 
 		part:Destroy()
@@ -225,14 +225,14 @@ describe("InstanceList - Edge Cases", function()
 	end)
 
 	it("should handle destroyed instances", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
-		local wasAllowed = InstanceList.instanceAllowed(part)
+		const _wasAllowed = InstanceList.instanceAllowed(part)
 
 		part:Destroy()
 
 		-- After destruction, should handle gracefully
-		local success, result = pcall(function()
+		const success, _result = pcall(function()
 			return InstanceList.instanceAllowed(part)
 		end)
 
@@ -241,7 +241,7 @@ describe("InstanceList - Edge Cases", function()
 	end)
 
 	it("should handle multiple allow/disallow rules correctly", function()
-		local testFolder = Instance.new("Folder")
+		const testFolder = Instance.new("Folder")
 		testFolder.Parent = workspace
 
 		-- Should be allowed (workspace descendants)
@@ -261,13 +261,13 @@ end)
 
 describe("InstanceList - Boundary Conditions", function()
 	it("should handle deeply nested instances", function()
-		local folder1 = Instance.new("Folder")
+		const folder1 = Instance.new("Folder")
 		folder1.Parent = workspace
-		local folder2 = Instance.new("Folder")
+		const folder2 = Instance.new("Folder")
 		folder2.Parent = folder1
-		local folder3 = Instance.new("Folder")
+		const folder3 = Instance.new("Folder")
 		folder3.Parent = folder2
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = folder3
 
 		-- All should be allowed as descendants of workspace
@@ -280,7 +280,7 @@ describe("InstanceList - Boundary Conditions", function()
 	end)
 
 	it("should handle instances moved between allowed and disallowed parents", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
 		expect(InstanceList.instanceAllowed(part)):toBe(true)

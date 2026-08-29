@@ -9,7 +9,7 @@
 	- Detailed test reporting
 ]]
 
-local TestFramework = {}
+const TestFramework = {}
 
 export type TestResult = {
 	name: string,
@@ -26,7 +26,7 @@ export type TestSuite = {
 }
 
 local currentSuite: TestSuite? = nil
-local allSuites: {TestSuite} = {}
+const allSuites: {TestSuite} = {}
 local beforeEachCallbacks: {() -> ()} = {}
 local afterEachCallbacks: {() -> ()} = {}
 
@@ -37,7 +37,7 @@ local afterEachCallbacks: {() -> ()} = {}
 	@param testFn Function containing test cases
 ]=]
 function TestFramework.describe(name: string, testFn: () -> ())
-	local previousSuite = currentSuite
+	const previousSuite = currentSuite
 	currentSuite = {
 		name = name,
 		tests = {},
@@ -50,7 +50,7 @@ function TestFramework.describe(name: string, testFn: () -> ())
 	afterEachCallbacks = {}
 
 	-- Run the test function to register tests
-	local success, err = pcall(testFn)
+	const success, err = pcall(testFn)
 	if not success then
 		warn(`[TestFramework] Error in test suite '{name}': {err}`)
 	end
@@ -70,7 +70,7 @@ function TestFramework.it(name: string, testFn: () -> ())
 		error("it() must be called within a describe() block", 2)
 	end
 
-	local result: TestResult = {
+	const result: TestResult = {
 		name = name,
 		success = false,
 		error = nil
@@ -82,7 +82,7 @@ function TestFramework.it(name: string, testFn: () -> ())
 	end
 
 	-- Run the test
-	local success, err = pcall(testFn)
+	const success, err = pcall(testFn)
 	result.success = success
 	if not success then
 		result.error = tostring(err)
@@ -120,7 +120,7 @@ end
 --[=[
 	Assertion utilities for testing.
 ]=]
-local Expect = {}
+const Expect = {}
 
 function Expect:toBe(expected: any)
 	if self.value ~= expected then
@@ -155,7 +155,7 @@ function Expect:toBeNil()
 end
 
 function Expect:toBeType(expectedType: string)
-	local actualType = typeof(self.value)
+	const actualType = typeof(self.value)
 	if actualType ~= expectedType then
 		error(`Expected type {expectedType}, but got {actualType}`, 2)
 	end
@@ -178,7 +178,7 @@ function Expect:toThrow(expectedError: string?)
 		error("toThrow() can only be used with functions", 2)
 	end
 
-	local success, err = pcall(self.value)
+	const success, err = pcall(self.value)
 	if success then
 		error("Expected function to throw an error, but it did not", 2)
 	end
@@ -206,7 +206,7 @@ function Expect:toContain(item: any)
 end
 
 function Expect.new(value: any)
-	local self = {
+	const self = {
 		value = value
 	}
 

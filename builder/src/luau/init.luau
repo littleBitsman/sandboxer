@@ -11,9 +11,9 @@
 ]]
 
 assert(game, "Must run in Roblox")
-local script = script :: any
+const script = script :: any
 
-local TestFramework = require("@self/TestFramework")
+const TestFramework = require("@self/TestFramework")
 
 -- Print header
 print()
@@ -28,10 +28,10 @@ local totalTests = 0
 local totalPassed = 0
 local totalFailed = 0
 
-local startTime = os.clock()
+const startTime = os.clock()
 for _, moduleName in script.tests:GetChildren() do
 	print(`Loading {moduleName}...`)
-	local success, err = pcall(require, moduleName)
+	const success, err = pcall(require, moduleName)
 
 	if not success then
 		-- Fail immediately: there was likely a breaking change
@@ -40,15 +40,15 @@ for _, moduleName in script.tests:GetChildren() do
 		totalSuites += 1
 	end
 end
-local TestTime = os.clock() - startTime
+const TestTime = os.clock() - startTime
 
 print()
 print("Loaded", totalSuites, "test suite(s)")
 print()
 
 -- Get and print results
-local results = TestFramework.runTests()
-local allPassed = TestFramework.printResults(results)
+const results = TestFramework.runTests()
+const allPassed = TestFramework.printResults(results)
 
 -- Calculate totals
 for _, suite in results do
@@ -70,7 +70,7 @@ print()
 print("Execution Time: " .. string.format("%.2f", TestTime) .. " seconds")
 print(string.rep("=", 60))
 
-local returnInfo = {
+const returnInfo = {
 	suites = totalSuites,
 	total = totalTests,
 	passed = totalPassed,

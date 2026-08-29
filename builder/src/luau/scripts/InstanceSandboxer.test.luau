@@ -12,14 +12,14 @@
 	- Edge cases and boundary conditions
 ]]
 
-local TestFramework = require("../TestFramework")
-local InstanceSandboxer = require("../../Sandboxer/InstanceSandboxer")
+const TestFramework = require("../TestFramework")
+const InstanceSandboxer = require("../../Sandboxer/InstanceSandboxer")
 
-local describe = TestFramework.describe
-local it = TestFramework.it
-local expect = TestFramework.expect
-local beforeEach = TestFramework.beforeEach
-local afterEach = TestFramework.afterEach
+const describe = TestFramework.describe
+const it = TestFramework.it
+const expect = TestFramework.expect
+const beforeEach = TestFramework.beforeEach
+const afterEach = TestFramework.afterEach
 
 describe("InstanceSandboxer - Instance Wrapping", function()
 	local testPart: Part
@@ -36,31 +36,31 @@ describe("InstanceSandboxer - Instance Wrapping", function()
 	end)
 
 	it("should wrap allowed instances", function()
-		local wrapped = InstanceSandboxer.wrapInstance(testPart)
+		const wrapped = InstanceSandboxer.wrapInstance(testPart)
 		expect(wrapped):toBeTruthy()
 		expect(InstanceSandboxer.isWrapped(wrapped)):toBe(true)
 	end)
 
 	it("should return nil for disallowed instances", function()
-		local disallowedInstance = Instance.new("Folder")
+		const disallowedInstance = Instance.new("Folder")
 		disallowedInstance.Parent = game:GetService("ServerScriptService")
 
-		local wrapped = InstanceSandboxer.wrapInstance(disallowedInstance)
+		const wrapped = InstanceSandboxer.wrapInstance(disallowedInstance)
 		expect(wrapped):toBeNil()
 
 		disallowedInstance:Destroy()
 	end)
 
 	it("should return same wrapped instance for multiple wraps", function()
-		local wrapped1 = InstanceSandboxer.wrapInstance(testPart)
-		local wrapped2 = InstanceSandboxer.wrapInstance(testPart)
+		const wrapped1 = InstanceSandboxer.wrapInstance(testPart)
+		const wrapped2 = InstanceSandboxer.wrapInstance(testPart)
 
 		expect(wrapped1):toBe(wrapped2)
 	end)
 
 	it("should correctly unwrap wrapped instances", function()
-		local wrapped = InstanceSandboxer.wrapInstance(testPart)
-		local unwrapped = InstanceSandboxer.unwrap(wrapped)
+		const wrapped = InstanceSandboxer.wrapInstance(testPart)
+		const unwrapped = InstanceSandboxer.unwrap(wrapped)
 
 		expect(unwrapped):toBe(testPart)
 	end)
@@ -88,25 +88,25 @@ describe("InstanceSandboxer - Signal Wrapping", function()
 	end)
 
 	it("should wrap RBXScriptSignals", function()
-		local signal = testPart.Changed
-		local wrapped = InstanceSandboxer.wrapEvent(signal, "Changed")
+		const signal = testPart.Changed
+		const wrapped = InstanceSandboxer.wrapEvent(signal, "Changed")
 
 		expect(wrapped):toBeTruthy()
 		expect(InstanceSandboxer.isWrappedSignal(wrapped)):toBe(true)
 	end)
 
 	it("should return same wrapped signal for multiple wraps", function()
-		local signal = testPart.Changed
-		local wrapped1 = InstanceSandboxer.wrapEvent(signal, "Changed")
-		local wrapped2 = InstanceSandboxer.wrapEvent(signal, "Changed")
+		const signal = testPart.Changed
+		const wrapped1 = InstanceSandboxer.wrapEvent(signal, "Changed")
+		const wrapped2 = InstanceSandboxer.wrapEvent(signal, "Changed")
 
 		expect(wrapped1):toBe(wrapped2)
 	end)
 
 	it("should correctly unwrap wrapped signals", function()
-		local signal = testPart.Changed
-		local wrapped = InstanceSandboxer.wrapEvent(signal, "Changed")
-		local unwrapped = InstanceSandboxer.unwrap(wrapped)
+		const signal = testPart.Changed
+		const wrapped = InstanceSandboxer.wrapEvent(signal, "Changed")
+		const unwrapped = InstanceSandboxer.unwrap(wrapped)
 
 		expect(unwrapped):toBe(signal)
 	end)
@@ -121,15 +121,15 @@ describe("InstanceSandboxer - Deep Wrapping", function()
 	end)
 
 	it("should deep wrap instances in tables", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
-		local tbl = {
+		const tbl = {
 			part = part,
 			name = "test"
 		}
 
-		local wrapped = InstanceSandboxer.deepWrap(tbl)
+		const wrapped = InstanceSandboxer.deepWrap(tbl)
 
 		expect(wrapped.name):toBe("test")
 		expect(InstanceSandboxer.isWrapped(wrapped.part)):toBe(true)
@@ -138,17 +138,17 @@ describe("InstanceSandboxer - Deep Wrapping", function()
 	end)
 
 	it("should deep wrap nested tables", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
-		local tbl = {
+		const tbl = {
 			nested = {
 				part = part,
 				value = 42
 			}
 		}
 
-		local wrapped = InstanceSandboxer.deepWrap(tbl)
+		const wrapped = InstanceSandboxer.deepWrap(tbl)
 
 		expect(wrapped.nested.value):toBe(42)
 		expect(InstanceSandboxer.isWrapped(wrapped.nested.part)):toBe(true)
@@ -157,27 +157,27 @@ describe("InstanceSandboxer - Deep Wrapping", function()
 	end)
 
 	it("should handle circular references in deep wrap", function()
-		local tbl: any = {
+		const tbl: any = {
 			value = 1
 		}
 		tbl.self = tbl
 
-		local wrapped = InstanceSandboxer.deepWrap(tbl)
+		const wrapped = InstanceSandboxer.deepWrap(tbl)
 
 		expect(wrapped.value):toBe(1)
 		expect(wrapped.self):toBe(wrapped)
 	end)
 
 	it("should deep wrap functions", function()
-		local fn = function(x: number)
+		const fn = function(x: number)
 			return x * 2
 		end
 
-		local tbl = {
+		const tbl = {
 			fn = fn
 		}
 
-		local wrapped = InstanceSandboxer.deepWrap(tbl)
+		const wrapped = InstanceSandboxer.deepWrap(tbl)
 
 		expect(typeof(wrapped.fn)):toBe("function")
 	end)
@@ -192,16 +192,16 @@ describe("InstanceSandboxer - Deep Unwrapping", function()
 	end)
 
 	it("should deep unwrap wrapped instances in tables", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
-		local wrapped = InstanceSandboxer.wrapInstance(part)
-		local tbl = {
+		const wrapped = InstanceSandboxer.wrapInstance(part)
+		const tbl = {
 			part = wrapped,
 			name = "test"
 		}
 
-		local unwrapped = InstanceSandboxer.deepUnwrap(tbl)
+		const unwrapped = InstanceSandboxer.deepUnwrap(tbl)
 
 		expect(unwrapped.name):toBe("test")
 		expect(unwrapped.part):toBe(part)
@@ -210,12 +210,12 @@ describe("InstanceSandboxer - Deep Unwrapping", function()
 	end)
 
 	it("should handle circular references in deep unwrap", function()
-		local tbl: any = {
+		const tbl: any = {
 			value = 1
 		}
 		tbl.self = tbl
 
-		local unwrapped = InstanceSandboxer.deepUnwrap(tbl)
+		const unwrapped = InstanceSandboxer.deepUnwrap(tbl)
 
 		expect(unwrapped.value):toBe(1)
 		expect(unwrapped.self):toBe(unwrapped)
@@ -224,22 +224,22 @@ end)
 
 describe("InstanceSandboxer - Argument Wrapping/Unwrapping", function()
 	it("should wrap single argument", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
-		local wrapped = InstanceSandboxer.wrapArgs(part)
+		const wrapped = InstanceSandboxer.wrapArgs(part)
 		expect(InstanceSandboxer.isWrapped(wrapped)):toBe(true)
 
 		part:Destroy()
 	end)
 
 	it("should wrap multiple arguments", function()
-		local part1 = Instance.new("Part")
+		const part1 = Instance.new("Part")
 		part1.Parent = workspace
-		local part2 = Instance.new("Part")
+		const part2 = Instance.new("Part")
 		part2.Parent = workspace
 
-		local w1, w2, w3 = InstanceSandboxer.wrapArgs(part1, "test", part2)
+		const w1, w2, w3 = InstanceSandboxer.wrapArgs(part1, "test", part2)
 
 		expect(InstanceSandboxer.isWrapped(w1)):toBe(true)
 		expect(w2):toBe("test")
@@ -250,7 +250,7 @@ describe("InstanceSandboxer - Argument Wrapping/Unwrapping", function()
 	end)
 
 	it("should preserve nil arguments when wrapping", function()
-		local w1, w2, w3 = InstanceSandboxer.wrapArgs(1, nil, 3)
+		const w1, w2, w3 = InstanceSandboxer.wrapArgs(1, nil, 3)
 
 		expect(w1):toBe(1)
 		expect(w2):toBeNil()
@@ -258,26 +258,26 @@ describe("InstanceSandboxer - Argument Wrapping/Unwrapping", function()
 	end)
 
 	it("should unwrap single argument", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
-		local wrapped = InstanceSandboxer.wrapInstance(part)
+		const wrapped = InstanceSandboxer.wrapInstance(part)
 
-		local unwrapped = InstanceSandboxer.unwrapArgs(wrapped)
+		const unwrapped = InstanceSandboxer.unwrapArgs(wrapped)
 		expect(unwrapped):toBe(part)
 
 		part:Destroy()
 	end)
 
 	it("should unwrap multiple arguments", function()
-		local part1 = Instance.new("Part")
+		const part1 = Instance.new("Part")
 		part1.Parent = workspace
-		local part2 = Instance.new("Part")
+		const part2 = Instance.new("Part")
 		part2.Parent = workspace
 
-		local wrapped1 = InstanceSandboxer.wrapInstance(part1)
-		local wrapped2 = InstanceSandboxer.wrapInstance(part2)
+		const wrapped1 = InstanceSandboxer.wrapInstance(part1)
+		const wrapped2 = InstanceSandboxer.wrapInstance(part2)
 
-		local u1, u2, u3 = InstanceSandboxer.unwrapArgs(wrapped1, "test", wrapped2)
+		const u1, u2, u3 = InstanceSandboxer.unwrapArgs(wrapped1, "test", wrapped2)
 
 		expect(u1):toBe(part1)
 		expect(u2):toBe("test")
@@ -290,36 +290,36 @@ end)
 
 describe("InstanceSandboxer - Function Wrapping", function()
 	it("should wrap functions", function()
-		local originalFn = function(x: number)
+		const originalFn = function(x: number)
 			return x * 2
 		end
 
-		local wrapped = InstanceSandboxer.wrapFn(originalFn)
+		const wrapped = InstanceSandboxer.wrapFn(originalFn)
 		expect(typeof(wrapped)):toBe("function")
 	end)
 
 	it("should return same wrapped function for multiple wraps", function()
-		local originalFn = function(x: number)
+		const originalFn = function(x: number)
 			return x * 2
 		end
 
-		local wrapped1 = InstanceSandboxer.wrapFn(originalFn)
-		local wrapped2 = InstanceSandboxer.wrapFn(originalFn)
+		const wrapped1 = InstanceSandboxer.wrapFn(originalFn)
+		const wrapped2 = InstanceSandboxer.wrapFn(originalFn)
 
 		expect(wrapped1):toBe(wrapped2)
 	end)
 
 	it("should wrap function arguments and results", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
-		local fn = function(p: Part)
+		const fn = function(p: Part)
 			return p
 		end
 
-		local wrapped = InstanceSandboxer.wrapFn(fn)
-		local wrappedPart = InstanceSandboxer.wrapInstance(part)
-		local result = wrapped(wrappedPart)
+		const wrapped = InstanceSandboxer.wrapFn(fn)
+		const wrappedPart = InstanceSandboxer.wrapInstance(part)
+		const result = wrapped(wrappedPart)
 
 		expect(InstanceSandboxer.isWrapped(result)):toBe(true)
 
@@ -327,21 +327,21 @@ describe("InstanceSandboxer - Function Wrapping", function()
 	end)
 
 	it("should reverse wrap functions correctly", function()
-		local fn = function(x: number)
+		const fn = function(x: number)
 			return x + 1
 		end
 
-		local reversed = InstanceSandboxer.reverseWrapFn(fn)
+		const reversed = InstanceSandboxer.reverseWrapFn(fn)
 		expect(typeof(reversed)):toBe("function")
 
-		local result = reversed(5)
+		const result = reversed(5)
 		expect(result):toBe(6)
 	end)
 end)
 
 describe("InstanceSandboxer - Metamethod Hooking", function()
 	it("should hook Instance metamethods", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
 		local hookCalled = 0
@@ -353,7 +353,7 @@ describe("InstanceSandboxer - Metamethod Hooking", function()
 			return index(part, key)
 		end)
 
-		local wrapped = InstanceSandboxer.wrapInstance(part)
+		const wrapped = InstanceSandboxer.wrapInstance(part)
 		if wrapped then
 			wrapped.GetFullName(wrapped)
 		end
@@ -371,7 +371,7 @@ describe("InstanceSandboxer - Metamethod Hooking", function()
 			InstanceSandboxer.hookMetamethod("notaninstance" :: any, "__index", function() end)
 		end):toThrow()
 
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
 		expect(function()
@@ -385,7 +385,7 @@ describe("InstanceSandboxer - Metamethod Hooking", function()
 	end)
 
 	it("should remove hooks when passed nil", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
 		local hookCalled = 0
@@ -400,7 +400,7 @@ describe("InstanceSandboxer - Metamethod Hooking", function()
 		-- Remove hook
 		InstanceSandboxer.hookMetamethod(part, "__index", nil)
 
-		local wrapped = InstanceSandboxer.wrapInstance(part)
+		const wrapped = InstanceSandboxer.wrapInstance(part)
 		if wrapped then
 			wrapped.GetFullName(wrapped)
 		end
@@ -420,7 +420,7 @@ describe("InstanceSandboxer - Type Checking", function()
 	end)
 
 	it("should correctly identify types through typeof wrapper", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
 		expect(InstanceSandboxer.typeof(part)):toBe("Instance")
@@ -454,11 +454,11 @@ end)
 
 describe("InstanceSandboxer - Edge Cases", function()
 	it("should handle wrapping already wrapped instances", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
-		local wrapped1 = InstanceSandboxer.wrapInstance(part)
-		local wrapped2 = InstanceSandboxer.wrapInstance(part)
+		const wrapped1 = InstanceSandboxer.wrapInstance(part)
+		const wrapped2 = InstanceSandboxer.wrapInstance(part)
 
 		expect(wrapped1):toBe(wrapped2)
 
@@ -466,27 +466,27 @@ describe("InstanceSandboxer - Edge Cases", function()
 	end)
 
 	it("should handle empty tables in deep wrap", function()
-		local emptyTable = {}
-		local wrapped = InstanceSandboxer.deepWrap(emptyTable)
+		const emptyTable = {}
+		const wrapped = InstanceSandboxer.deepWrap(emptyTable)
 
 		expect(typeof(wrapped)):toBe("table")
 	end)
 
 	it("should handle empty tables in deep unwrap", function()
-		local emptyTable = {}
-		local unwrapped = InstanceSandboxer.deepUnwrap(emptyTable)
+		const emptyTable = {}
+		const unwrapped = InstanceSandboxer.deepUnwrap(emptyTable)
 
 		expect(typeof(unwrapped)):toBe("table")
 	end)
 
 	it("should handle tables with numeric keys", function()
-		local part1 = Instance.new("Part")
+		const part1 = Instance.new("Part")
 		part1.Parent = workspace
-		local part2 = Instance.new("Part")
+		const part2 = Instance.new("Part")
 		part2.Parent = workspace
 
-		local tbl = {part1, part2, "test"}
-		local wrapped = InstanceSandboxer.deepWrap(tbl)
+		const tbl = {part1, part2, "test"}
+		const wrapped = InstanceSandboxer.deepWrap(tbl)
 
 		expect(InstanceSandboxer.isWrapped(wrapped[1])):toBe(true)
 		expect(InstanceSandboxer.isWrapped(wrapped[2])):toBe(true)
@@ -499,12 +499,12 @@ end)
 
 describe("InstanceSandboxer - Boundary Conditions", function()
 	it("should handle very large tables", function()
-		local largeTbl = {}
+		const largeTbl = {}
 		for i = 1, 100 do
 			largeTbl[i] = i
 		end
 
-		local wrapped = InstanceSandboxer.deepWrap(largeTbl)
+		const wrapped = InstanceSandboxer.deepWrap(largeTbl)
 
 		expect(typeof(wrapped)):toBe("table")
 		expect(wrapped[50]):toBe(50)
@@ -512,24 +512,24 @@ describe("InstanceSandboxer - Boundary Conditions", function()
 	end)
 
 	it("should handle deeply nested tables", function()
-		local tbl: any = {value = 1}
+		const tbl: any = {value = 1}
 		local current = tbl
 		for i = 1, 10 do
 			current.nested = {value = i}
 			current = current.nested
 		end
 
-		local wrapped = InstanceSandboxer.deepWrap(tbl)
+		const wrapped = InstanceSandboxer.deepWrap(tbl)
 
 		expect(typeof(wrapped)):toBe("table")
 		expect(wrapped.value):toBe(1)
 	end)
 
 	it("should handle mixed type tables", function()
-		local part = Instance.new("Part")
+		const part = Instance.new("Part")
 		part.Parent = workspace
 
-		local tbl = {
+		const tbl = {
 			number = 42,
 			string = "test",
 			boolean = true,
@@ -538,7 +538,7 @@ describe("InstanceSandboxer - Boundary Conditions", function()
 			fn = function() return "result" end
 		}
 
-		local wrapped = InstanceSandboxer.deepWrap(tbl)
+		const wrapped = InstanceSandboxer.deepWrap(tbl)
 
 		expect(wrapped.number):toBe(42)
 		expect(wrapped.string):toBe("test")

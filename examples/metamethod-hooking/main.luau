@@ -1,7 +1,7 @@
-local Sandboxer = require(game:GetService("ServerScriptService").Init)
+const Sandboxer = require(game:GetService("ServerScriptService").Init)
 
-local exampleFunction = function()
-    local sig = game:GetService("RunService").Heartbeat
+const exampleFunction = function()
+    const sig = game:GetService("RunService").Heartbeat
     assert(sig == nil, "Heartbeat should be nil due to the hook!")
 end
 
